@@ -1,4 +1,3 @@
-
 breed [ hives hive ]
 breed [ eggCohorts eggCohort]
 breed [ larvaeCohorts larvaeCohort]
@@ -1939,8 +1938,8 @@ to WorkerIHbeesDevProc
   foreach reverse sort IHbeeCohorts
     ; cohorts have to be asked in order of their age (i.e. in reverse order of
     ; their "who") otherwise over-aged bees vanish with a 50% chance
-  [
-    ask ?
+  [ ?1 ->
+    ask ?1
     [
       let deathsCounter 0
         ; # of bees dying in this cohort at current time step
@@ -2131,8 +2130,8 @@ to BroodCareProc
     if lackNurses = true
     [
       foreach reverse sort DroneEggCohorts
-      [
-        ask ?    ; young drone eggs die first if not enough nurses are available
+      [ ?1 ->
+        ask ?1    ; young drone eggs die first if not enough nurses are available
         [ while [ (stillToKill * number) > 0 ]
           [
             set number number - 1
@@ -2145,8 +2144,8 @@ to BroodCareProc
     if lackNurses = true or lackProtein = true
     [
       foreach reverse sort DroneLarvaeCohorts
-      [
-        ask ?
+      [ ?1 ->
+        ask ?1
         [
           while [ (stillToKill * number) > 0 ]
           [ set number number - 1 set stillToKill stillToKill - 1
@@ -2164,8 +2163,8 @@ to BroodCareProc
     if lackNurses = true
     [
       foreach reverse sort EggCohorts
-      [
-        ask ?
+      [ ?1 ->
+        ask ?1
         [
           while [ (stillToKill * number) > 0 ]
           [
@@ -2180,8 +2179,8 @@ to BroodCareProc
     if lackNurses = true or lackProtein = true
     [
       foreach reverse sort larvaeCohorts
-      [
-        ask ?
+      [ ?1 ->
+        ask ?1
         [
           while [ (stillToKill * number) > 0 ]
           [
@@ -2200,8 +2199,8 @@ to BroodCareProc
     if lackNurses = true
     [
       foreach reverse sort DronePupaeCohorts
-      [
-        ask ?
+      [ ?1 ->
+        ask ?1
         [
           while [ (stillToKill * number) > 0 ]
           [
@@ -2223,8 +2222,8 @@ to BroodCareProc
     if lackNurses = true
     [
       foreach reverse sort pupaeCohorts
-      [
-        ask ?
+      [ ?1 ->
+        ask ?1
         [
           while [ (stillToKill * number) > 0 ]
           [
@@ -3428,8 +3427,8 @@ to Foraging_searchingProc
         set chosenPatch -1
 
         foreach nowAvailablePatchesList
-        [
-          ask flowerPatch ?   ;  "?" item of the list
+        [ ?1 ->
+          ask flowerPatch ?1   ;  "?" item of the list
           [  ; the patch is randomly chosen, according to its detection probability:
             set patchCounter patchCounter + detectionProbability
             if (patchCounter >= p) and (chosenPatch = -1) [ set chosenPatch who ]
@@ -4193,11 +4192,11 @@ to MitesInvasionProc
   ; excess of invaded mites: # mites in each cells is restricted to MAX_INVADED_MITES:
   let counter 0
   foreach WorkerCellListTemporary
-  [
+  [ ?1 ->
     ; (note: items are addressed in ordered way - NOT randomly)
-    if ? > MAX_INVADED_MITES_WORKERCELL
+    if ?1 > MAX_INVADED_MITES_WORKERCELL
     [
-      set exitingMites exitingMites + (? - MAX_INVADED_MITES_WORKERCELL)
+      set exitingMites exitingMites + (?1 - MAX_INVADED_MITES_WORKERCELL)
         ; if too many mites in cells: they leave the cell ("?": # of mites in the cell)
 
       set WorkerCellListTemporary replace-item
@@ -4213,10 +4212,10 @@ to MitesInvasionProc
   set counter 0  ; resetting the counter
 
   foreach DroneCellListTemporary
-  [
-    if ? > MAX_INVADED_MITES_DRONECELL
+  [ ?1 ->
+    if ?1 > MAX_INVADED_MITES_DRONECELL
     [
-      set exitingMites exitingMites + (? - MAX_INVADED_MITES_DRONECELL)
+      set exitingMites exitingMites + (?1 - MAX_INVADED_MITES_DRONECELL)
         ; if too many mites in cells: they leave the cell ("?": # of mites in the cell)
 
       set DroneCellListTemporary replace-item counter
@@ -4253,9 +4252,9 @@ to MitesInvasionProc
     foreach workerCellListTemporary
       ; checks the list that contains all worker brood cells for
       ; how many mites have entered..
-    [
-      set workerCellListCondensed replace-item ? workerCellListCondensed
-        ((item ? workerCellListCondensed) + 1)
+    [ ?1 ->
+      set workerCellListCondensed replace-item ?1 workerCellListCondensed
+        ((item ?1 workerCellListCondensed) + 1)
     ]  ; sums up the number of cells entered by 0, 1,2..n mites in the mitesOrganisers own list
 
     set cohortInvadedMitesSum cohortInvadedMitesSum + InvadingMitesWorkerCellsReal
@@ -4274,9 +4273,9 @@ to MitesInvasionProc
     foreach droneCellListTemporary
       ; checks the list that contains all drone brood cells for
       ; how many mites have entered..
-    [
-      set droneCellListCondensed replace-item ? droneCellListCondensed
-        ((item ? droneCellListCondensed) + 1)
+    [ ?1 ->
+      set droneCellListCondensed replace-item ?1 droneCellListCondensed
+        ((item ?1 droneCellListCondensed) + 1)
     ] ; sums up the cell entered by 0, 1,2..n mites in the mitesOrganisers own list
 
     set cohortInvadedMitesSum cohortInvadedMitesSum + InvadingMitesDroneCellsReal
@@ -4981,17 +4980,17 @@ to MiteOrganisersUpdateProc
       ; counts total numbers of mites in brood cells for each miteOrganiser (="mite cohort")
 
     foreach workerCellListCondensed
-    [
-      set cohortInvadedMitesSum cohortInvadedMitesSum + (? * counter)
+    [ ?1 ->
+      set cohortInvadedMitesSum cohortInvadedMitesSum + (?1 * counter)
       set counter counter + 1
     ] ; sums up the mites in worker cells ( multiplication of # cells with X mites in them * X) (X = counter)
 
     set counter 0
 
     foreach droneCellListCondensed
-    [
+    [ ?1 ->
       set cohortInvadedMitesSum cohortInvadedMitesSum
-          + (? * counter)
+          + (?1 * counter)
       set counter counter + 1
     ] ; sums up the mites in drone cells ( multiplication of # cells with X mites in them * X) (X = counter)
 
@@ -5481,14 +5480,14 @@ to BeekeepingProc
     let counter 0
     set cohortInvadedMitesSum 0
     foreach workerCellListCondensed
-    [
-      set cohortInvadedMitesSum cohortInvadedMitesSum + (? * counter)
+    [ ?1 ->
+      set cohortInvadedMitesSum cohortInvadedMitesSum + (?1 * counter)
       set counter counter + 1
     ]
     set counter 0
     foreach droneCellListCondensed
-    [
-      set cohortInvadedMitesSum cohortInvadedMitesSum + (? * counter)
+    [ ?1 ->
+      set cohortInvadedMitesSum cohortInvadedMitesSum + (?1 * counter)
       set counter counter + 1
     ]
     set label cohortInvadedMitesSum
@@ -6114,8 +6113,8 @@ to WriteToFileProc
 
   let year ceiling (ticks / 365)
   foreach sort flowerPatches
-  [
-    ask ?
+  [ ?1 ->
+    ask ?1
     [
       file-print
          ( word year " " word ticks " " ForagingRounds " " word self
@@ -6127,8 +6126,8 @@ to WriteToFileProc
   ]
 
   foreach sort foragerSquadrons
-  [
-    ask ?
+  [ ?1 ->
+    ask ?1
     [
       file-print
         (word year " " word ticks " " ForagingRounds " "  word self
@@ -6501,8 +6500,8 @@ end
 GRAPHICS-WINDOW
 0
 10
-563
-739
+561
+717
 -1
 -1
 8.52
@@ -6548,7 +6547,7 @@ BUTTON
 634
 724
 1 Day
-StartProc\n
+StartProc
 NIL
 1
 T
@@ -6565,7 +6564,7 @@ BUTTON
 669
 686
 Setup
-Setup\n
+Setup
 NIL
 1
 T
@@ -6610,7 +6609,7 @@ BUTTON
 706
 724
 1 Month
-if ticks = 0 [ StartProc ] ; to set date to 1 January\nlet days-in-months (list 31 28 31 30 31 30 31 31 30 31 30 31)\nlet month 0\nlet dayOfYear remainder ticks 365.01\n  let dayOfMonth 0\n  let sumDaysInMonths 0\n  while [ sumDaysInMonths < dayOfYear ]\n  [\n    set month month + 1 \n    set sumDaysInMonths sumDaysInMonths + item (month - 1) days-in-months \n    set dayOfMonth dayOfYear - sumDaysInMonths + item (month - 1) days-in-months  \n  ]\n\nrepeat item (month - 1) days-in-months [ StartProc ] \n\n;ifelse ticks = 0\n; [ repeat 31 [ StartProc ] ]\n; [ repeat item (month - 1) days-in-months [ StartProc ] ]\n
+if ticks = 0 [ StartProc ] ; to set date to 1 January\nlet days-in-months (list 31 28 31 30 31 30 31 31 30 31 30 31)\nlet month 0\nlet dayOfYear remainder ticks 365.01\n  let dayOfMonth 0\n  let sumDaysInMonths 0\n  while [ sumDaysInMonths < dayOfYear ]\n  [\n    set month month + 1\n    set sumDaysInMonths sumDaysInMonths + item (month - 1) days-in-months\n    set dayOfMonth dayOfYear - sumDaysInMonths + item (month - 1) days-in-months\n  ]\n\nrepeat item (month - 1) days-in-months [ StartProc ]\n\n;ifelse ticks = 0\n; [ repeat 31 [ StartProc ] ]\n; [ repeat item (month - 1) days-in-months [ StartProc ] ]
 NIL
 1
 T
@@ -6627,7 +6626,7 @@ INPUTBOX
 1098
 199
 QUANTITY_R_l
-20
+20.0
 1
 0
 Number
@@ -6638,7 +6637,7 @@ INPUTBOX
 1201
 199
 QUANTITY_G_l
-20
+20.0
 1
 0
 Number
@@ -6671,7 +6670,7 @@ INPUTBOX
 1099
 380
 DISTANCE_R
-1500
+1500.0
 1
 0
 Number
@@ -6682,7 +6681,7 @@ INPUTBOX
 1201
 379
 DISTANCE_G
-500
+500.0
 1
 0
 Number
@@ -6715,7 +6714,7 @@ INPUTBOX
 1200
 70
 N_INITIAL_BEES
-10000
+10000.0
 1
 0
 Number
@@ -6793,7 +6792,7 @@ INPUTBOX
 1584
 659
 MAX_HONEY_STORE_kg
-50
+50.0
 1
 0
 Number
@@ -6805,7 +6804,7 @@ SWITCH
 1541
 stopDead
 stopDead
-0
+1
 1
 -1000
 
@@ -6822,7 +6821,7 @@ INPUTBOX
 1099
 70
 RAND_SEED
-1
+1.0
 1
 0
 Number
@@ -6866,7 +6865,7 @@ SWITCH
 516
 HoneyHarvesting
 HoneyHarvesting
-1
+0
 1
 -1000
 
@@ -6876,7 +6875,7 @@ INPUTBOX
 1406
 476
 HarvestingDay
-135
+135.0
 1
 0
 Number
@@ -6887,7 +6886,7 @@ INPUTBOX
 1698
 476
 RemainingHoney_kg
-5
+5.0
 1
 0
 Number
@@ -6898,7 +6897,7 @@ INPUTBOX
 1490
 70
 N_INITIAL_MITES_HEALTHY
-0
+10.0
 1
 0
 Number
@@ -6930,7 +6929,7 @@ INPUTBOX
 1658
 70
 N_INITIAL_MITES_INFECTED
-0
+10.0
 1
 0
 Number
@@ -7026,7 +7025,7 @@ INPUTBOX
 1098
 319
 POLLEN_R_kg
-1
+1.0
 1
 0
 Number
@@ -7037,7 +7036,7 @@ INPUTBOX
 1201
 319
 POLLEN_G_kg
-1
+1.0
 1
 0
 Number
@@ -7059,7 +7058,7 @@ INPUTBOX
 103
 1569
 SHIFT_R
-30
+30.0
 1
 0
 Number
@@ -7070,7 +7069,7 @@ INPUTBOX
 214
 1569
 SHIFT_G
--40
+-40.0
 1
 0
 Number
@@ -7094,7 +7093,7 @@ CHOOSER
 Swarming
 Swarming
 "No swarming" "Swarm control" "Swarming (parental colony)" "Swarming (prime swarm)"
-0
+2
 
 SWITCH
 229
@@ -7147,7 +7146,7 @@ INPUTBOX
 773
 1368
 SQUADRON_SIZE
-100
+100.0
 1
 0
 Number
@@ -7175,7 +7174,7 @@ INPUTBOX
 1201
 134
 CRITICAL_COLONY_SIZE_WINTER
-4000
+4000.0
 1
 0
 Number
@@ -7186,7 +7185,7 @@ BUTTON
 999
 1374
 show Patches
-type \"day: \" type day print \" \"\nforeach sort flowerpatches [ ask ? [\n type \"ID \" type who\n type \" patchType \" type patchType \n ;type \" oldPatchID \" type oldPatchID\n type \" distanceToColony \" type distanceToColony \n type \" x: \" type xcorMap \n type \" y: \" type ycorMap \n type \" size_sqm \" type size_sqm \n type \" Nectar_l \" type precision (quantityMyl / 1000000) 1\n type \" Pollen_kg \" type precision (amountPollen_g / 1000) 1 \n type \" nectarConc \" type nectarConcFlowerPatch \n type \" EEF \" type precision eef 2\n type \" followers \" type precision danceFollowersNectar 2\n type \" detectionProbability \" type precision detectionProbability 4 \n type \" handlingTimeNectar \" type round handlingTimeNectar \n type \" handlingTimePollen \" type round handlingTimePollen\n type \" total visitors \" type summedVisitors\n\n \n \n print \" \"\n] ]
+type \"day: \" type day print \" \"\nforeach sort flowerpatches [ ?1 -> ask ?1 [\n type \"ID \" type who\n type \" patchType \" type patchType\n ;type \" oldPatchID \" type oldPatchID\n type \" distanceToColony \" type distanceToColony\n type \" x: \" type xcorMap\n type \" y: \" type ycorMap\n type \" size_sqm \" type size_sqm\n type \" Nectar_l \" type precision (quantityMyl / 1000000) 1\n type \" Pollen_kg \" type precision (amountPollen_g / 1000) 1\n type \" nectarConc \" type nectarConcFlowerPatch\n type \" EEF \" type precision eef 2\n type \" followers \" type precision danceFollowersNectar 2\n type \" detectionProbability \" type precision detectionProbability 4\n type \" handlingTimeNectar \" type round handlingTimeNectar\n type \" handlingTimePollen \" type round handlingTimePollen\n type \" total visitors \" type summedVisitors\n\n\n\n print \" \"\n] ]
 NIL
 1
 T
@@ -7213,7 +7212,7 @@ BUTTON
 999
 1408
 active patches
-type \"day: \" type day print \" \"\nforeach sort flowerpatches [ ask ? \n[ if quantityMyl > 0 or amountPollen_g > 0\n[\n type \"ID \" type who\n; type \" patchType \" type patchType \n type \" distanceToColony \" type distanceToColony \n type \" size_sqm \" type size_sqm \n type \" Nectar_l \" type precision (quantityMyl / 1000000) 1\n type \" Pollen_kg \" type precision (amountPollen_g / 1000)1 \n type \" nectarConc \" type nectarConcFlowerPatch \n type \" detectionProbability \" type precision detectionProbability 4 \n type \" handlingTimeNectar \" type round handlingTimeNectar \n type \" handlingTimePollen \" type round handlingTimePollen\n type \" total visitors \" type summedVisitors\n\n \n \n print \" \"\n] ] ]
+type \"day: \" type day print \" \"\nforeach sort flowerpatches [ ?1 -> ask ?1\n[ if quantityMyl > 0 or amountPollen_g > 0\n[\n type \"ID \" type who\n; type \" patchType \" type patchType\n type \" distanceToColony \" type distanceToColony\n type \" size_sqm \" type size_sqm\n type \" Nectar_l \" type precision (quantityMyl / 1000000) 1\n type \" Pollen_kg \" type precision (amountPollen_g / 1000)1\n type \" nectarConc \" type nectarConcFlowerPatch\n type \" detectionProbability \" type precision detectionProbability 4\n type \" handlingTimeNectar \" type round handlingTimeNectar\n type \" handlingTimePollen \" type round handlingTimePollen\n type \" total visitors \" type summedVisitors\n\n\n\n print \" \"\n] ] ]
 NIL
 1
 T
@@ -7230,7 +7229,7 @@ BUTTON
 1000
 1443
 activityList
-type \"day: \" type day print \" \"\n;foreach sort foragerSquadrons with [km_today > 0]  \nforeach sort foragerSquadrons\n  [ ask ? \n     [ type who type \" \" type precision km_today 2 type \" \"  print activityList ]\n  ]
+type \"day: \" type day print \" \"\n;foreach sort foragerSquadrons with [km_today > 0]\nforeach sort foragerSquadrons\n  [ ?1 -> ask ?1\n     [ type who type \" \" type precision km_today 2 type \" \"  print activityList ]\n  ]
 NIL
 1
 T
@@ -7247,7 +7246,7 @@ INPUTBOX
 652
 1369
 MAX_km_PER_DAY
-7299
+7299.0
 1
 0
 Number
@@ -7258,7 +7257,7 @@ INPUTBOX
 1443
 659
 MAX_BROODCELLS
-2000099
+2000099.0
 1
 0
 Number
@@ -7326,7 +7325,7 @@ MONITOR
 669
 73
 Nectar visits
- sum [ nectarVisitsToday ] of flowerpatches\n
+sum [ nectarVisitsToday ] of flowerpatches
 17
 1
 11
@@ -7337,7 +7336,7 @@ MONITOR
 738
 73
 Pollen visits
- sum [ pollenVisitsToday ] of flowerpatches
+sum [ pollenVisitsToday ] of flowerpatches
 17
 1
 11
@@ -7348,7 +7347,7 @@ INPUTBOX
 772
 784
 X_Days
-161
+161.0
 1
 0
 Number
@@ -7387,7 +7386,7 @@ BUTTON
 321
 43
 1 feeder
-set ReadInfile false\nset QUANTITY_R_l 20\nset QUANTITY_G_l 0\nset CONC_R 1.5\nset POLLEN_R_kg 2\nset POLLEN_G_kg 0\nset DISTANCE_R 1500\nset ConstantHandlingTime true\nset seasonalFoodFlow false\nset TIME_NECTAR_GATHERING 79  ;  Seeley\nset TIME_POLLEN_GATHERING 120 ; arbitrary\nset DETECT_PROB_R 0.01  ; 0.15   ; arbitrary\nSetup\n\n
+set ReadInfile false\nset QUANTITY_R_l 20\nset QUANTITY_G_l 0\nset CONC_R 1.5\nset POLLEN_R_kg 2\nset POLLEN_G_kg 0\nset DISTANCE_R 1500\nset ConstantHandlingTime true\nset seasonalFoodFlow false\nset TIME_NECTAR_GATHERING 79  ;  Seeley\nset TIME_POLLEN_GATHERING 120 ; arbitrary\nset DETECT_PROB_R 0.01  ; 0.15   ; arbitrary\nSetup
 NIL
 1
 T
@@ -7404,7 +7403,7 @@ BUTTON
 385
 43
 RRes
-set Weather  \"Rothamsted (2009-2011)\"    \nset INPUT_FILE  \"Input_2-1_FoodFlow_RRes.txt\"       \nset ReadInfile  TRUE      \nSetup\n  \n
+set Weather  \"Rothamsted (2009-2011)\"\nset INPUT_FILE  \"Input_2-1_FoodFlow_RRes.txt\"\nset ReadInfile  TRUE\nSetup
 NIL
 1
 T
@@ -7421,7 +7420,7 @@ BUTTON
 449
 43
 varroa
-set N_INITIAL_MITES_HEALTHY 10\nset N_INITIAL_MITES_INFECTED 10\nset Virus \"DWV\"\nset MiteReproductionModel \"Martin\"\nset GenericPlot4 \"mites\"\nSetup\n
+set N_INITIAL_MITES_HEALTHY 10\nset N_INITIAL_MITES_INFECTED 10\nset Virus \"DWV\"\nset MiteReproductionModel \"Martin\"\nset GenericPlot4 \"mites\"\nSetup
 NIL
 1
 T
@@ -7455,7 +7454,7 @@ INPUTBOX
 1501
 476
 HarvestingPeriod
-80
+80.0
 1
 0
 Number
@@ -7466,7 +7465,7 @@ INPUTBOX
 1583
 476
 HarvestingTH
-20
+20.0
 1
 0
 Number
@@ -7478,7 +7477,7 @@ SWITCH
 516
 FeedBees
 FeedBees
-1
+0
 1
 -1000
 
@@ -7488,7 +7487,7 @@ BUTTON
 512
 43
 beekeeping
-set VarroaTreatment TRUE\nset FeedBees TRUE\nset HoneyHarvesting TRUE\nset MergeWeakColonies TRUE \nset MergeColoniesTH 5000\n;set AddPollen TRUE\nset HarvestingDay 135\nset HarvestingPeriod 80\nset RemainingHoney_kg 5\nset HarvestingTH 20\n;Setup\nask signs with [shape = \"jenny\"] [show-turtle]\n\n
+set VarroaTreatment TRUE\nset FeedBees TRUE\nset HoneyHarvesting TRUE\nset MergeWeakColonies TRUE\nset MergeColoniesTH 5000\n;set AddPollen TRUE\nset HarvestingDay 135\nset HarvestingPeriod 80\nset RemainingHoney_kg 5\nset HarvestingTH 20\n;Setup\nask signs with [shape = \"jenny\"] [show-turtle]
 NIL
 1
 T
@@ -7523,7 +7522,7 @@ SWITCH
 550
 MergeWeakColonies
 MergeWeakColonies
-1
+0
 1
 -1000
 
@@ -7533,7 +7532,7 @@ INPUTBOX
 1507
 806
 MergeColoniesTH
-5000
+5000.0
 1
 0
 Number
@@ -7572,7 +7571,7 @@ BUTTON
 1001
 1479
 visited patches
-type \"day: \" type day print \" \"\nforeach sort flowerpatches [ ask ? \n[ if pollenVisitsToday > 0 or nectarVisitsToday > 0\n[\n type \"ID \" type who\n; type \" patchType \" type patchType \n type \" distanceToColony \" type distanceToColony \n type \" size_sqm \" type size_sqm \n type \" Nectar_l \" type precision (quantityMyl / 1000000) 1\n type \" Pollen_kg \" type precision (amountPollen_g / 1000)1 \n type \" nectarConc \" type nectarConcFlowerPatch \n type \" detectionProbability \" type precision detectionProbability 4 \n type \" handlingTimeNectar \" type round handlingTimeNectar \n type \" handlingTimePollen \" type round handlingTimePollen\n type \" pollenVisitsToday \" type pollenVisitsToday\n type \" nectarVisitsToday \" type nectarVisitsToday\n \n type \" total visitors \" type summedVisitors\n\n \n \n print \" \"\n] ] ]
+type \"day: \" type day print \" \"\nforeach sort flowerpatches [ ?1 -> ask ?1\n[ if pollenVisitsToday > 0 or nectarVisitsToday > 0\n[\n type \"ID \" type who\n; type \" patchType \" type patchType\n type \" distanceToColony \" type distanceToColony\n type \" size_sqm \" type size_sqm\n type \" Nectar_l \" type precision (quantityMyl / 1000000) 1\n type \" Pollen_kg \" type precision (amountPollen_g / 1000)1\n type \" nectarConc \" type nectarConcFlowerPatch\n type \" detectionProbability \" type precision detectionProbability 4\n type \" handlingTimeNectar \" type round handlingTimeNectar\n type \" handlingTimePollen \" type round handlingTimePollen\n type \" pollenVisitsToday \" type pollenVisitsToday\n type \" nectarVisitsToday \" type nectarVisitsToday\n\n type \" total visitors \" type summedVisitors\n\n\n\n print \" \"\n] ] ]
 NIL
 1
 T
@@ -7589,7 +7588,7 @@ BUTTON
 260
 43
 2 patches
-set ReadInfile false\nset QUANTITY_R_l 20\nset QUANTITY_G_l 20\nset CONC_R 1.5\nset CONC_G 1.5\nset POLLEN_R_kg 1\nset POLLEN_G_kg 1\nset DISTANCE_R 1500\nset DISTANCE_G 500\nset ConstantHandlingTime FALSE\nset seasonalFoodFlow TRUE\nset SHIFT_R 30\nset shift_G -40\nset TIME_NECTAR_GATHERING 1200\nset TIME_POLLEN_GATHERING 600\nset DETECT_PROB_R 0.2\nset DETECT_PROB_G 0.2\nSetup\n\n
+set ReadInfile false\nset QUANTITY_R_l 20\nset QUANTITY_G_l 20\nset CONC_R 1.5\nset CONC_G 1.5\nset POLLEN_R_kg 1\nset POLLEN_G_kg 1\nset DISTANCE_R 1500\nset DISTANCE_G 500\nset ConstantHandlingTime FALSE\nset seasonalFoodFlow TRUE\nset SHIFT_R 30\nset shift_G -40\nset TIME_NECTAR_GATHERING 1200\nset TIME_POLLEN_GATHERING 600\nset DETECT_PROB_R 0.2\nset DETECT_PROB_G 0.2\nSetup
 NIL
 1
 T
@@ -7606,7 +7605,7 @@ INPUTBOX
 652
 1430
 ProbLazinessWinterbees
-0
+0.0
 1
 0
 Number
@@ -7617,7 +7616,7 @@ BUTTON
 1700
 585
 add pollen
-  ;let addedPollen_kg 1\n  set PollenStore_g PollenStore_g + (addedPollen_kg * 1000)\n  ask Signs with [shape = \"pollengrain\"] [ show-turtle ]\n  set TotalPollenAdded TotalPollenAdded + addedPollen_kg\n  output-type \"Added pollen [kg]: \" output-type addedPollen_kg output-type \" total pollen added [kg]: \" output-print TotalPollenAdded
+;let addedPollen_kg 1\n  set PollenStore_g PollenStore_g + (addedPollen_kg * 1000)\n  ask Signs with [shape = \"pollengrain\"] [ show-turtle ]\n  set TotalPollenAdded TotalPollenAdded + addedPollen_kg\n  output-type \"Added pollen [kg]: \" output-type addedPollen_kg output-type \" total pollen added [kg]: \" output-print TotalPollenAdded
 NIL
 1
 T
@@ -7644,7 +7643,7 @@ INPUTBOX
 213
 1443
 TIME_NECTAR_GATHERING
-1200
+1200.0
 1
 0
 Number
@@ -7655,7 +7654,7 @@ INPUTBOX
 213
 1505
 TIME_POLLEN_GATHERING
-600
+600.0
 1
 0
 Number
@@ -7666,7 +7665,7 @@ INPUTBOX
 434
 1477
 DANCE_INTERCEPT
-0
+0.0
 1
 0
 Number
@@ -7722,7 +7721,7 @@ BUTTON
 278
 1413
 high 0
-; Seeley 1994: highest slope (from bee \"WY\")\n; but intercept = 0 to allow dancing for \n; far patches\nset DANCE_INTERCEPT 0\nset DANCE_SLOPE 1.16
+; Seeley 1994: highest slope (from bee \"WY\")\n; but intercept = 0 to allow dancing for\n; far patches\nset DANCE_INTERCEPT 0\nset DANCE_SLOPE 1.16
 NIL
 1
 T
@@ -7769,7 +7768,7 @@ BUTTON
 882
 1369
 Version Test
-\nset Rand_seed 1\n\nDefaultProc\n\nset stopDead false\n\n; \"Varroa\"\nset N_INITIAL_MITES_HEALTHY 10\nset N_INITIAL_MITES_INFECTED 10\nset Virus \"DWV\"\nset MiteReproductionModel \"Martin\"\nset GenericPlot4 \"mites\"\nset AllowReinfestation true\nset KillOpenBrood true\nset KillOpenBrood2 true\nset KillAllMitesInCells true\nset KillAllMitesInCells2 true\nset DroneBroodRemoval true\nset ContinuousBroodRemoval true\nset TreatmentDay2 180\nset TreatmentDuration2 20\nset EfficiencyPhoretic2 0.05\n\n; \"Beekeeping\"\nset VarroaTreatment TRUE\nset FeedBees TRUE\nset HoneyHarvesting TRUE\nset MergeWeakColonies TRUE \nset MergeColoniesTH 5000\nset HarvestingDay 135\nset HarvestingPeriod 80\nset RemainingHoney_kg 5\nset HarvestingTH 20\nask signs with [shape = \"jenny\"] [show-turtle]\n\n; SWARMING\nset Swarming \"Swarming (prime swarm)\"\n\nSetup\nrepeat 365 [ startProc ]\nset VarroaTreatment false\nset Swarming \"Swarming (parental colony)\"\nset ContinuousBroodRemoval false\nset KillOpenBrood false\nset KillOpenBrood2 false\nset KillAllMitesInCells false\nset KillAllMitesInCells2 false\n\nrepeat 1825 [ startProc ]\n\nifelse\n(totalForagers = 5300)\nand ( totalIHbees = 41)\nand (totalMites = 7101)\nand (precision (HoneyEnergyStore / ( ENERGY_HONEY_per_g * 1000 )) 6 = 16.297696)\n[ user-message \"OK! No deviations detected from the Beehave_BeeMapp2016 version!\" ]\n[ ask patches [ set pcolor pink ]\n  user-message \"Caution! Changes have been made to the code! THIS IS NOT THE OFFICIAL VERSION OF Beehave_BeeMapp2015!\"]\n
+set Rand_seed 1\n\nDefaultProc\n\nset stopDead false\n\n; \"Varroa\"\nset N_INITIAL_MITES_HEALTHY 10\nset N_INITIAL_MITES_INFECTED 10\nset Virus \"DWV\"\nset MiteReproductionModel \"Martin\"\nset GenericPlot4 \"mites\"\nset AllowReinfestation true\nset KillOpenBrood true\nset KillOpenBrood2 true\nset KillAllMitesInCells true\nset KillAllMitesInCells2 true\nset DroneBroodRemoval true\nset ContinuousBroodRemoval true\nset TreatmentDay2 180\nset TreatmentDuration2 20\nset EfficiencyPhoretic2 0.05\n\n; \"Beekeeping\"\nset VarroaTreatment TRUE\nset FeedBees TRUE\nset HoneyHarvesting TRUE\nset MergeWeakColonies TRUE\nset MergeColoniesTH 5000\nset HarvestingDay 135\nset HarvestingPeriod 80\nset RemainingHoney_kg 5\nset HarvestingTH 20\nask signs with [shape = \"jenny\"] [show-turtle]\n\n; SWARMING\nset Swarming \"Swarming (prime swarm)\"\n\nSetup\nrepeat 365 [ startProc ]\nset VarroaTreatment false\nset Swarming \"Swarming (parental colony)\"\nset ContinuousBroodRemoval false\nset KillOpenBrood false\nset KillOpenBrood2 false\nset KillAllMitesInCells false\nset KillAllMitesInCells2 false\n\nrepeat 1825 [ startProc ]\n\nifelse\n(totalForagers = 5300)\nand ( totalIHbees = 41)\nand (totalMites = 7101)\nand (precision (HoneyEnergyStore / ( ENERGY_HONEY_per_g * 1000 )) 6 = 16.297696)\n[ user-message \"OK! No deviations detected from the Beehave_BeeMapp2016 version!\" ]\n[ ask patches [ set pcolor pink ]\n  user-message \"Caution! Changes have been made to the code! THIS IS NOT THE OFFICIAL VERSION OF Beehave_BeeMapp2015!\"]
 NIL
 1
 T
@@ -8279,23 +8278,6 @@ HoneyEnergyStore / ( ENERGY_HONEY_per_g * 1000 )
 1
 11
 
-BUTTON
-895
-1482
-1002
-1515
-Video
-;; export movie of the view\nsetup\nmovie-start \"out.mov\"\nmovie-set-frame-rate 15\nmovie-grab-view ;; show the initial state\nrepeat 365\n[ StartProc \n   movie-grab-view \n ]\nmovie-close\n\n
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
 MONITOR
 1879
 1089
@@ -8330,7 +8312,7 @@ BUTTON
 1711
 805
 1-2 foraging file
-set ReadInfile TRUE\nset StopDead false\nSetup\nlet filename \"Input_1-2_Foraging.txt\" \nif file-exists? filename   ;; If the file already exists, we begin by deleting it, otherwise new data would be appended to the old contents.\n             [ file-delete filename ]\nfile-open filename    \n   \nfile-print count flowerPatches\nfile-print \"day who nectarVisits pollenVisits\"\nrepeat 365 [ \n  startProc\n  foreach sort flowerpatches [ ask ? [\n    file-type day file-type \" \"\n    ;file-type who file-type \" \"\n    file-type oldPatchId file-type \" \"\n    file-type nectarVisitsToday file-type \" \"\n    file-type pollenVisitsToday file-print \" \"\n   ] ]\n] ; end repeat\nfile-close  \nuser-message \"Input file ('Input_1-2_Foraging.txt') was created for the external landscape module BEESCOUT\"
+set ReadInfile TRUE\nset StopDead false\nSetup\nlet filename \"Input_1-2_Foraging.txt\"\nif file-exists? filename   ;; If the file already exists, we begin by deleting it, otherwise new data would be appended to the old contents.\n             [ file-delete filename ]\nfile-open filename\n\nfile-print count flowerPatches\nfile-print \"day who nectarVisits pollenVisits\"\nrepeat 365 [\n  startProc\n  foreach sort flowerpatches [ ?1 -> ask ?1 [\n    file-type day file-type \" \"\n    ;file-type who file-type \" \"\n    file-type oldPatchId file-type \" \"\n    file-type nectarVisitsToday file-type \" \"\n    file-type pollenVisitsToday file-print \" \"\n   ] ]\n] ; end repeat\nfile-close\nuser-message \"Input file ('Input_1-2_Foraging.txt') was created for the external landscape module BEESCOUT\"
 NIL
 1
 T
@@ -8380,7 +8362,7 @@ INPUTBOX
 1444
 205
 TreatmentDay
-270
+270.0
 1
 0
 Number
@@ -8391,7 +8373,7 @@ INPUTBOX
 1561
 205
 TreatmentDuration
-40
+40.0
 1
 0
 Number
@@ -8413,7 +8395,7 @@ INPUTBOX
 1443
 275
 TreatmentDay2
-0
+180.0
 1
 0
 Number
@@ -8424,7 +8406,7 @@ INPUTBOX
 1560
 275
 TreatmentDuration2
-0
+20.0
 1
 0
 Number
@@ -8435,7 +8417,7 @@ INPUTBOX
 1678
 275
 EfficiencyPhoretic2
-0
+0.05
 1
 0
 Number
@@ -8521,7 +8503,7 @@ BUTTON
 1252
 1433
 show cells per frame
-let cellsPerFrame 0\nlet message \"\"\nif HiveType = \"National, WBC, Smith\"\n [ \n   if FrameType = \"Standard brood/deep frame\" [ set cellsPerFrame 5400 ]\n   if FrameType = \"Extra deep/jumbo frame\" [ set cellsPerFrame 7700 ]\n   if FrameType = \"Shallow frame\" [ set cellsPerFrame 3400 ]\n ] \nif HiveType = \"Langstroth\"\n [ \n   if FrameType = \"Standard brood/deep frame\" [ set cellsPerFrame 7200 ]\n   if FrameType = \"Extra deep/jumbo frame\" [ set cellsPerFrame 9000 ]\n   if FrameType = \"Shallow frame\" [ set cellsPerFrame 4000 ]\n ]\nif HiveType = \"Commercial\"\n [ \n   if FrameType = \"Standard brood/deep frame\" [ set cellsPerFrame 6500 ]\n   if FrameType = \"Shallow frame\" [ set cellsPerFrame 4300 ]\n ]\nif HiveType = \"Dadant\"\n [ \n   if FrameType = \"Standard brood/deep frame\" [ set cellsPerFrame 9000 ]\n   if FrameType = \"Shallow frame\" [ set cellsPerFrame 4800 ]\n ]\nifelse cellsPerFrame > 0\n [ set message (word \"Number of cells per frame (both sides): ca. \" cellsPerFrame) ]\n [ set message \"No data for this combination of hive and frame type\"]\n \nuser-message message
+let cellsPerFrame 0\nlet message \"\"\nif HiveType = \"National, WBC, Smith\"\n [\n   if FrameType = \"Standard brood/deep frame\" [ set cellsPerFrame 5400 ]\n   if FrameType = \"Extra deep/jumbo frame\" [ set cellsPerFrame 7700 ]\n   if FrameType = \"Shallow frame\" [ set cellsPerFrame 3400 ]\n ]\nif HiveType = \"Langstroth\"\n [\n   if FrameType = \"Standard brood/deep frame\" [ set cellsPerFrame 7200 ]\n   if FrameType = \"Extra deep/jumbo frame\" [ set cellsPerFrame 9000 ]\n   if FrameType = \"Shallow frame\" [ set cellsPerFrame 4000 ]\n ]\nif HiveType = \"Commercial\"\n [\n   if FrameType = \"Standard brood/deep frame\" [ set cellsPerFrame 6500 ]\n   if FrameType = \"Shallow frame\" [ set cellsPerFrame 4300 ]\n ]\nif HiveType = \"Dadant\"\n [\n   if FrameType = \"Standard brood/deep frame\" [ set cellsPerFrame 9000 ]\n   if FrameType = \"Shallow frame\" [ set cellsPerFrame 4800 ]\n ]\nifelse cellsPerFrame > 0\n [ set message (word \"Number of cells per frame (both sides): ca. \" cellsPerFrame) ]\n [ set message \"No data for this combination of hive and frame type\"]\n\nuser-message message
 NIL
 1
 T
@@ -8539,7 +8521,7 @@ SWITCH
 310
 DroneBroodRemoval
 DroneBroodRemoval
-1
+0
 1
 -1000
 
@@ -8549,7 +8531,7 @@ INPUTBOX
 1586
 337
 RemovalDay1
-100
+100.0
 1
 0
 Number
@@ -8560,7 +8542,7 @@ INPUTBOX
 1672
 337
 RemovalDay2
-140
+140.0
 1
 0
 Number
@@ -8571,7 +8553,7 @@ INPUTBOX
 1757
 337
 RemovalDay3
-180
+180.0
 1
 0
 Number
@@ -8582,7 +8564,7 @@ INPUTBOX
 1841
 337
 RemovalDay4
-220
+220.0
 1
 0
 Number
@@ -8593,7 +8575,7 @@ INPUTBOX
 1926
 337
 RemovalDay5
-240
+240.0
 1
 0
 Number
@@ -8671,7 +8653,7 @@ SWITCH
 104
 AllowReinfestation
 AllowReinfestation
-1
+0
 1
 -1000
 
@@ -8847,8 +8829,6 @@ A copy of the GNU General Public License can be found at http://www.gnu.org/lice
 • We recommend that any publication or report based on using BEEHAVE shall include, in the Supplementary Material, the very NetLogo file that was used to produce the corresponding figure, table, or other kinds of results, as well as the "Experiments" in the BehaviorSpace and all necessary input files (see Supplementary Material of Becher et al. 2013 as example).
 
 • You might want to modify the NetLogo code implementing BEEHAVE, for example by adding further outputs, or running specific scenarios. To check whether you are still using the original version of BEEHAVE click the "Version Test" button, which runs the model under specific settings and defined random numbers and informs the user if the code was changed. Note that not all changes to the code can be detected by this test. If you changed the code, we recommend to document these changes in all detail and to provide a revised ODD model description in which the modified or added elements are highlighted.
-
-
 @#$#@#$#@
 default
 true
@@ -9805,9 +9785,8 @@ false
 0
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
-
 @#$#@#$#@
-NetLogo 5.3.1
+NetLogo 6.0.2
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
@@ -10068,7 +10047,6 @@ true
 0
 Line -7500403 true 150 150 90 180
 Line -7500403 true 150 150 210 180
-
 @#$#@#$#@
 0
 @#$#@#$#@
