@@ -9791,10 +9791,10 @@ NetLogo 6.0.2
 @#$#@#$#@
 @#$#@#$#@
 <experiments>
-  <experiment name="Experiment 1" repetitions="1" runMetricsEveryStep="true">
+  <experiment name="exp1" repetitions="1" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
-    <timeLimit steps="1095"/>
+    <timeLimit steps="10"/>
     <metric>day</metric>
     <metric>totalEggs</metric>
     <metric>totalLarvae</metric>
@@ -10008,9 +10008,6 @@ NetLogo 6.0.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Swarming">
       <value value="&quot;No swarming&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="Testing">
-      <value value="&quot;SIMULATION - NO TEST&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="TIME_NECTAR_GATHERING">
       <value value="1200"/>
