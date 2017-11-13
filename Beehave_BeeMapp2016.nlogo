@@ -189,6 +189,7 @@ globals [
     ; probability for an infected bee pupa to infect healthy invaded mites
   WEIGHT_WORKER_g
 
+  MyMetric
 
 
      AllBeeMappCorrectionsList   ;   ***NEW FOR BEEHAVE_BEEMAPP2015***
@@ -697,6 +698,8 @@ to ParameterizationProc
       ; NO data on drone mortality! Use worker mortality!
   ]
 
+  set MyMetric []
+
 end;
 
 ; ********************************************************************************************************************************************************************************
@@ -1094,6 +1097,7 @@ to DailyUpdateProc
     ]
   ]
 
+  set MyMetric [pollenVisitsToday] of flowerpatches
   ask flowerpatches
   [
     ifelse ( quantityMyl < CROPVOLUME * SQUADRON_SIZE
@@ -1128,19 +1132,20 @@ to DailyUpdateProc
       set quantityMyl FlowerPatchesMaxFoodAvailableTodayREP who "Nectar"
       set amountPollen_g FlowerPatchesMaxFoodAvailableTodayREP who "Pollen"
     ]
-   ]
-
- ask flowerPatches
- [
-   set nectarVisitsToday 0 set pollenVisitsToday 0
-   if detectionProbability < -1
-   [
-     set BugAlarm true
-     user-message "Wrong detection probability! Set 'ModelledInsteadCalcDetectProb' 'false' and re-start run!"
-   ]
- ]
-
- if ReadInfile = true
+  ]
+  
+  
+  ask flowerPatches
+  [
+    set nectarVisitsToday 0 set pollenVisitsToday 0
+    if detectionProbability < -1
+    [
+      set BugAlarm true
+      user-message "Wrong detection probability! Set 'ModelledInsteadCalcDetectProb' 'false' and re-start run!"
+    ]
+  ]
+  
+  if ReadInfile = true
  [
    set TodaysSinglePatchList []
      ; short list, contains data of current patch and only for today
@@ -9794,7 +9799,7 @@ NetLogo 6.0.2
   <experiment name="exp1" repetitions="1" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
-    <timeLimit steps="10"/>
+    <timeLimit steps="1"/>
     <metric>day</metric>
     <metric>totalEggs</metric>
     <metric>totalLarvae</metric>
@@ -9813,27 +9818,9 @@ NetLogo 6.0.2
     <metric>phoreticMites</metric>
     <metric>totalMites</metric>
     <metric>phoreticMitesHealthyRate</metric>
+    <metric>MyMetric</metric>
     <enumeratedValueSet variable="RAND_SEED">
       <value value="1"/>
-      <value value="2"/>
-      <value value="3"/>
-      <value value="4"/>
-      <value value="5"/>
-      <value value="6"/>
-      <value value="7"/>
-      <value value="8"/>
-      <value value="9"/>
-      <value value="10"/>
-      <value value="11"/>
-      <value value="12"/>
-      <value value="13"/>
-      <value value="14"/>
-      <value value="15"/>
-      <value value="16"/>
-      <value value="17"/>
-      <value value="18"/>
-      <value value="19"/>
-      <value value="20"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="AddPollen">
       <value value="false"/>
