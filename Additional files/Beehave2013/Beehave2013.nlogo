@@ -1,3 +1,4 @@
+
 breed [ hives hive ]
 breed [ eggCohorts eggCohort]
 breed [ larvaeCohorts larvaeCohort]
@@ -188,14 +189,6 @@ globals [
   VIRUS_TRANSMISSION_RATE_PUPA_TO_MITES
     ; probability for an infected bee pupa to infect healthy invaded mites
   WEIGHT_WORKER_g
-
-
-
-     AllBeeMappCorrectionsList   ;   ***NEW FOR BEEHAVE_BEEMAPP2015***
-     AssessmentNumber            ;   ***NEW FOR BEEHAVE_BEEMAPP2015***
-     WeatherDataList             ;   ***NEW FOR BEEHAVE_BEEMAPP2015***
-
-
 ]
 
 turtles-own ; all cohorts below have these variables too
@@ -301,8 +294,7 @@ to Setup ; BUTTON!
        ; IF: flower patches are defined by input fields in GUI
     [ Create_Read-in_FlowerPatchesProc ]
        ; ELSE: or read in from a text file
-  if ReadBeeMappFile = true ;                      ***NEW FOR BEEHAVE_BEEMAPP2015***
-   [ ReadBeeMappFileProc ]
+
   CreateImagesProc
   if (Experiment = "Experiment A") or (Experiment = "Experiment B")
     [
@@ -364,25 +356,6 @@ end ; StartProc
 ;================================================================================================================================================================================
 
 to ParameterizationProc
-
-
-;  begin ***NEW FOR BEEHAVE_BEEMAPP2015***
- set WeatherDataList []
- if Weather = "Weather File"
- [
-   ifelse file-exists? WeatherFile
-   [
-   file-open WeatherFile
-   while [not file-at-end?]
-   [
-      set WeatherDataList lput read-from-string(file-read-line) WeatherDataList
-   ]
-   file-close
-   ]
-   [ user-message "No such weather input file available!" ]
- ]
-;  end ***NEW FOR BEEHAVE_BEEMAPP2015***
-
 
 ; BROOD CARE:
   set FORAGER_NURSING_CONTRIBUTION  0.2
@@ -853,15 +826,6 @@ to CreateImagesProc
     set heading 0
     hide-turtle
     ]
-  create-Signs 1 ; ***NEW FOR BEEHAVE_BEEMAPP2015***
-  [
-    setxy 38 -40
-    set shape "queenx"
-    set size 8
-    set color 33
-    set heading 0
-    hide-turtle
-    ]
 end
 
 ; ********************************************************************************************************************************************************************************
@@ -891,9 +855,7 @@ to Go
   NewIHbeesProc
   NewDronesProc
   ; Varroa mite module:
-  MiteProc
-;  if (TotalMites > 0) [ MiteProc ]  ; ***NEW FOR BEEHAVE_BEEMAPP2015***
-
+  if (TotalMites > 0) [ MiteProc ]
   BeekeepingProc
   DrawIHcohortsProc
   ; Foraging module:
@@ -1081,7 +1043,7 @@ to DailyUpdateProc
     ; on current day (calculated after MiteFall!)
 
   ask foragerSquadrons [ set km_today 0 ]
-  if N_INITIAL_MITES_INFECTED = 0 and AllowReinfestation = false
+  if N_INITIAL_MITES_INFECTED = 0
   [
     if ( count foragerSquadrons with [ infectionState = "infectedAsPupa"]
        + count foragerSquadrons with [ infectionState = "infectedAsAdult"] ) > 0
@@ -1283,16 +1245,10 @@ to DailyUpdateProc
        set number_Healthy 0
        set number_infectedAsPupa 0
      ]
-     ask droneCohorts
-     [
-       set number 0
-       set number_Healthy 0           ; ***NEW FOR BEEHAVE_BEEMAPP2015***
-       set number_infectedAsPupa 0    ; ***NEW FOR BEEHAVE_BEEMAPP2015***
-     ]
+     ask droneCohorts [ set number 0  ]
    ]
  ]
 
- if ReadBeeMappFile = true [ BeeMappCorrectionProc ]   ;  ***NEW FOR BEEHAVE_BEEMAPP2015***
 end
 
 ; ********************************************************************************************************************************************************************************
@@ -1388,7 +1344,6 @@ to NewEggsProc
   ]
 
   ; no egg-laying of young queen (also if QUEEN_AGEING = false!):
-  ask signs with [ shape = "queenx" ] [ hide-turtle ]  ; ***NEW FOR BEEHAVE_BEEMAPP2015***
   if Queenage <= 10
   [
     set NewWorkerEggs 0
@@ -1396,7 +1351,6 @@ to NewEggsProc
       ; can be postponed for 4 weeks if weather is bad
 
     set NewDroneEggs 0
-    ask signs with [ shape = "queenx" ] [ show-turtle ]  ; ***NEW FOR BEEHAVE_BEEMAPP2015***
   ]
   if NewWorkerEggs < 0 [ set NewWorkerEggs 0 ]
   if NewDroneEggs < 0 [ set NewDroneEggs 0 ]
@@ -1681,7 +1635,7 @@ to DroneLarvaeDevProc ; ageing of cohort
     set number number - numberDied
 
     if (numberDied > 0)
-       and (age > INVADING_DRONE_CELLS_AGE)
+       and ( age > INVADING_DRONE_CELLS_AGE )
        and (TotalMites > 0)
     [
       MitesReleaseProc invadedByMiteOrganiserID ploidy numberDied "dyingBrood"
@@ -1938,8 +1892,8 @@ to WorkerIHbeesDevProc
   foreach reverse sort IHbeeCohorts
     ; cohorts have to be asked in order of their age (i.e. in reverse order of
     ; their "who") otherwise over-aged bees vanish with a 50% chance
-  [ ?1 ->
-    ask ?1
+  [
+    ask ?
     [
       let deathsCounter 0
         ; # of bees dying in this cohort at current time step
@@ -2130,8 +2084,8 @@ to BroodCareProc
     if lackNurses = true
     [
       foreach reverse sort DroneEggCohorts
-      [ ?1 ->
-        ask ?1    ; young drone eggs die first if not enough nurses are available
+      [
+        ask ?    ; young drone eggs die first if not enough nurses are available
         [ while [ (stillToKill * number) > 0 ]
           [
             set number number - 1
@@ -2144,8 +2098,8 @@ to BroodCareProc
     if lackNurses = true or lackProtein = true
     [
       foreach reverse sort DroneLarvaeCohorts
-      [ ?1 ->
-        ask ?1
+      [
+        ask ?
         [
           while [ (stillToKill * number) > 0 ]
           [ set number number - 1 set stillToKill stillToKill - 1
@@ -2163,8 +2117,8 @@ to BroodCareProc
     if lackNurses = true
     [
       foreach reverse sort EggCohorts
-      [ ?1 ->
-        ask ?1
+      [
+        ask ?
         [
           while [ (stillToKill * number) > 0 ]
           [
@@ -2179,8 +2133,8 @@ to BroodCareProc
     if lackNurses = true or lackProtein = true
     [
       foreach reverse sort larvaeCohorts
-      [ ?1 ->
-        ask ?1
+      [
+        ask ?
         [
           while [ (stillToKill * number) > 0 ]
           [
@@ -2199,8 +2153,8 @@ to BroodCareProc
     if lackNurses = true
     [
       foreach reverse sort DronePupaeCohorts
-      [ ?1 ->
-        ask ?1
+      [
+        ask ?
         [
           while [ (stillToKill * number) > 0 ]
           [
@@ -2222,8 +2176,8 @@ to BroodCareProc
     if lackNurses = true
     [
       foreach reverse sort pupaeCohorts
-      [ ?1 ->
-        ask ?1
+      [
+        ask ?
         [
           while [ (stillToKill * number) > 0 ]
           [
@@ -3115,7 +3069,6 @@ to-report Foraging_PeriodREP
   if Weather != "HoPoMo_Season"
     and Weather != "HoPoMo_Season_Random"
     and Weather != "Constant"
-    and Weather != "Weather File"    ;  ***NEW FOR BEEHAVE_BEEMAPP2015***
   [
     set foragingPeriod_s (item (day - 1) foragingHoursList) * 3600
   ] ; [s] hours sunshine on that day, in seconds
@@ -3132,18 +3085,6 @@ to-report Foraging_PeriodREP
   ]
 
   if Weather = "Constant" [ set foragingPeriod_s 8 * 3600 ]
-
-
-  ;  begin ***NEW FOR BEEHAVE_BEEMAPP2015***
-  if Weather = "Weather File"
-  [
-    let year_no ceiling (ticks / 365) - 1
-
-    set foragingPeriod_s item (day - 1) ( item ( year_no mod length(WeatherDataList)) WeatherDataList) * 3600
-  ]
-  ; end ;  ***NEW FOR BEEHAVE_BEEMAPP2015***
-
-
 
   ask signs with [ shape = "sun"]
   [
@@ -3164,7 +3105,7 @@ to-report Foraging_PeriodREP
     set BugAlarm true
     show "BugAlarm in Foraging_PeriodREP! Weather not defined!"
   ]
-  if foragingPeriod_s < 0 [ set foragingPeriod_s 0 ]  ;  ***NEW FOR BEEHAVE_BEEMAPP2015***
+
   report foragingPeriod_s
 end
 
@@ -3427,8 +3368,8 @@ to Foraging_searchingProc
         set chosenPatch -1
 
         foreach nowAvailablePatchesList
-        [ ?1 ->
-          ask flowerPatch ?1   ;  "?" item of the list
+        [
+          ask flowerPatch ?   ;  "?" item of the list
           [  ; the patch is randomly chosen, according to its detection probability:
             set patchCounter patchCounter + detectionProbability
             if (patchCounter >= p) and (chosenPatch = -1) [ set chosenPatch who ]
@@ -4192,11 +4133,11 @@ to MitesInvasionProc
   ; excess of invaded mites: # mites in each cells is restricted to MAX_INVADED_MITES:
   let counter 0
   foreach WorkerCellListTemporary
-  [ ?1 ->
+  [
     ; (note: items are addressed in ordered way - NOT randomly)
-    if ?1 > MAX_INVADED_MITES_WORKERCELL
+    if ? > MAX_INVADED_MITES_WORKERCELL
     [
-      set exitingMites exitingMites + (?1 - MAX_INVADED_MITES_WORKERCELL)
+      set exitingMites exitingMites + (? - MAX_INVADED_MITES_WORKERCELL)
         ; if too many mites in cells: they leave the cell ("?": # of mites in the cell)
 
       set WorkerCellListTemporary replace-item
@@ -4212,10 +4153,10 @@ to MitesInvasionProc
   set counter 0  ; resetting the counter
 
   foreach DroneCellListTemporary
-  [ ?1 ->
-    if ?1 > MAX_INVADED_MITES_DRONECELL
+  [
+    if ? > MAX_INVADED_MITES_DRONECELL
     [
-      set exitingMites exitingMites + (?1 - MAX_INVADED_MITES_DRONECELL)
+      set exitingMites exitingMites + (? - MAX_INVADED_MITES_DRONECELL)
         ; if too many mites in cells: they leave the cell ("?": # of mites in the cell)
 
       set DroneCellListTemporary replace-item counter
@@ -4252,9 +4193,9 @@ to MitesInvasionProc
     foreach workerCellListTemporary
       ; checks the list that contains all worker brood cells for
       ; how many mites have entered..
-    [ ?1 ->
-      set workerCellListCondensed replace-item ?1 workerCellListCondensed
-        ((item ?1 workerCellListCondensed) + 1)
+    [
+      set workerCellListCondensed replace-item ? workerCellListCondensed
+        ((item ? workerCellListCondensed) + 1)
     ]  ; sums up the number of cells entered by 0, 1,2..n mites in the mitesOrganisers own list
 
     set cohortInvadedMitesSum cohortInvadedMitesSum + InvadingMitesWorkerCellsReal
@@ -4273,9 +4214,9 @@ to MitesInvasionProc
     foreach droneCellListTemporary
       ; checks the list that contains all drone brood cells for
       ; how many mites have entered..
-    [ ?1 ->
-      set droneCellListCondensed replace-item ?1 droneCellListCondensed
-        ((item ?1 droneCellListCondensed) + 1)
+    [
+      set droneCellListCondensed replace-item ? droneCellListCondensed
+        ((item ? droneCellListCondensed) + 1)
     ] ; sums up the cell entered by 0, 1,2..n mites in the mitesOrganisers own list
 
     set cohortInvadedMitesSum cohortInvadedMitesSum + InvadingMitesDroneCellsReal
@@ -4980,17 +4921,17 @@ to MiteOrganisersUpdateProc
       ; counts total numbers of mites in brood cells for each miteOrganiser (="mite cohort")
 
     foreach workerCellListCondensed
-    [ ?1 ->
-      set cohortInvadedMitesSum cohortInvadedMitesSum + (?1 * counter)
+    [
+      set cohortInvadedMitesSum cohortInvadedMitesSum + (? * counter)
       set counter counter + 1
     ] ; sums up the mites in worker cells ( multiplication of # cells with X mites in them * X) (X = counter)
 
     set counter 0
 
     foreach droneCellListCondensed
-    [ ?1 ->
+    [
       set cohortInvadedMitesSum cohortInvadedMitesSum
-          + (?1 * counter)
+          + (? * counter)
       set counter counter + 1
     ] ; sums up the mites in drone cells ( multiplication of # cells with X mites in them * X) (X = counter)
 
@@ -5226,7 +5167,7 @@ to BeekeepingProc
   let minWinterStore_kg 16 ; [kg] honey
   let minSummerStore_kg 3   ; [kg]
   let addedFondant_kg 1 ; [kg]
-  ;let addedPollen_kg 0.5  ; [kg]
+  let addedPollen_kg 0.5  ; [kg]
 
   ; FEEDING OF COLONY:
   ask Signs with [shape = "ambrosia"] [ hide-turtle]
@@ -5361,144 +5302,21 @@ to BeekeepingProc
     ]  ; old queen is replaced by the beekeeper
    ]
 
-  ; begin ***NEW FOR BEEHAVE_BEEMAPP2015***
-    ; let treatmentDay 270   ; 270: 27.September
-    ; let treatmentDuration 40  ; (28-40d) Fries et al. 1994
-    ; let treatmentEfficiency 0.115
+  let treatmentDay 270   ; 270: 27.September
+  let treatmentDuration 40  ; (28-40d) Fries et al. 1994
+  let treatmentEfficiency 0.115
     ; (0.115) Fries et al. 1994 kills X*100% of phoretic mites each treatment Day
 
-  ; treatment #1:
-  if EfficiencyPhoretic > 1 [ set EfficiencyPhoretic 1 ]
   ifelse ((varroaTreatment = true) and (Day >= treatmentDay)
-    and (Day <=  treatmentDay + treatmentDuration ))
+    and (Day <=  treatmentDay + treatmentDuration )
+    and (N_INITIAL_MITES_HEALTHY + N_INITIAL_MITES_INFECTED > 0))
     [
-      set PhoreticMites round(PhoreticMites * (1 - EfficiencyPhoretic))
+      set PhoreticMites round(PhoreticMites * (1 - treatmentEfficiency))
       ask signs with [shape = "x" or shape = "varroamite03"] [ show-turtle]
-
-
-
-      if KillOpenBrood = true
-        [
-          ask (turtle-set eggCohorts larvaeCohorts) with [ age < PUPATION_AGE ] [ set number 0 ]
-          ask (turtle-set droneEggCohorts droneLarvaeCohorts) with [ age < DRONE_PUPATION_AGE ] [ set number 0 ]
-          ask miteOrganisers with [ age <= 10 ] ; i.e. those mite organisers, connected to dying larvae cohorts
-          [
-            if age < 10 ; for workers: age 10 brood is already capped, i.e. not affected!
-              [ set workerCellListCondensed n-values (MAX_INVADED_MITES_WORKERCELL + 1) [ 0 ]]
-            set droneCellListCondensed n-values (MAX_INVADED_MITES_DRONECELL + 1) [ 0 ]
-            let memoInvadedW invadedWorkerCohortID
-            let memoInvadedD invadedDroneCohortID
-            if any? turtles with [ who = memoInvadedW ] [ set workerCellListCondensed replace-item 0 workerCellListCondensed [number] of turtle invadedWorkerCohortID ]
-            if any? turtles with [ who = memoInvadedD ] [ set droneCellListCondensed replace-item 0 droneCellListCondensed [number] of turtle invadedDroneCohortID ]
-          ]
-        ]
-
-     if KillAllMitesInCells = true
-        [
-          ask miteOrganisers
-          [
-            set workerCellListCondensed n-values (MAX_INVADED_MITES_WORKERCELL + 1) [ 0 ]
-            set droneCellListCondensed n-values (MAX_INVADED_MITES_DRONECELL + 1) [ 0 ]
-            let memoInvadedW invadedWorkerCohortID
-            let memoInvadedD invadedDroneCohortID
-            if any? turtles with [ who = memoInvadedW ] [ set workerCellListCondensed replace-item 0 workerCellListCondensed [number] of turtle invadedWorkerCohortID ]
-            if any? turtles with [ who = memoInvadedD ] [ set droneCellListCondensed replace-item 0 droneCellListCondensed [number] of turtle invadedDroneCohortID ]
-          ]
-        ]
     ]
     [
       ask signs with [shape = "x" or shape = "varroamite03"] [ hide-turtle]
     ]
-
-  ; treatment #2:
-  if EfficiencyPhoretic2 > 1 [ set EfficiencyPhoretic2 1 ]
-  if ((varroaTreatment = true) and (Day >= treatmentDay2)
-    and (Day <=  treatmentDay2 + treatmentDuration2 ))
-    [
-      set PhoreticMites round (PhoreticMites * (1 - EfficiencyPhoretic2))
-      ask signs with [shape = "x" or shape = "varroamite03"] [ show-turtle]
-      if KillOpenBrood2 = true
-        [
-          ask (turtle-set eggCohorts larvaeCohorts) with [ age < PUPATION_AGE ] [ set number 0 ]
-          ask (turtle-set droneEggCohorts droneLarvaeCohorts) with [ age < DRONE_PUPATION_AGE ] [ set number 0 ]
-          ask miteOrganisers with [ age <= 10 ] ; i.e. those mite organisers, connected to dying larvae cohorts
-          [
-            if age < 10 ; for workers: age 10 brood is already capped, i.e. not affected!
-              [ set workerCellListCondensed n-values (MAX_INVADED_MITES_WORKERCELL + 1) [ 0 ]]
-            set droneCellListCondensed n-values (MAX_INVADED_MITES_DRONECELL + 1) [ 0 ]
-            let memoInvadedW invadedWorkerCohortID
-            let memoInvadedD invadedDroneCohortID
-            if any? turtles with [ who = memoInvadedW ] [ set workerCellListCondensed replace-item 0 workerCellListCondensed [number] of turtle invadedWorkerCohortID ]
-            if any? turtles with [ who = memoInvadedD ] [ set droneCellListCondensed replace-item 0 droneCellListCondensed [number] of turtle invadedDroneCohortID ]
-          ]
-        ]
-
-      if KillAllMitesInCells2 = true
-        [
-         ask miteOrganisers
-          [
-            set workerCellListCondensed n-values (MAX_INVADED_MITES_WORKERCELL + 1) [ 0 ]
-            set droneCellListCondensed n-values (MAX_INVADED_MITES_DRONECELL + 1) [ 0 ]
-            let memoInvadedW invadedWorkerCohortID
-            let memoInvadedD invadedDroneCohortID
-            if any? turtles with [ who = memoInvadedW ] [ set workerCellListCondensed replace-item 0 workerCellListCondensed [number] of turtle invadedWorkerCohortID ]
-            if any? turtles with [ who = memoInvadedD ] [ set droneCellListCondensed replace-item 0 droneCellListCondensed [number] of turtle invadedDroneCohortID ]
-          ]
-        ]
-
-    ]
-
-  ; removal drone brood:
-  if (ContinuousBroodRemoval = true) or (DroneBroodRemoval = true and (day = RemovalDay1 or day = RemovalDay2 or day = RemovalDay3 or day = RemovalDay4 or day = RemovalDay5))
-  [
-    ask dronePupaeCohorts
-    [
-      set number 0
-      set number_healthy 0
-      set number_infectedAsPupa 0
-    ]
-    ask miteOrganisers with [ age >=  DRONE_PUPATION_AGE + 1 ]
-    [
-       set droneCellListCondensed n-values (MAX_INVADED_MITES_DRONECELL + 1) [ 0 ]
-    ]
-    CountingProc
-  ]
-
-  ; re-infestation of varroa-mites
-  if AllowReinfestation = true
-  [
-    let additionalMites random-poisson MiteReinfestation
-    if DailyForagingPeriod = 0 [ set additionalMites 0 ]
-    if phoreticMites + additionalMites > 0
-      [ set PhoreticMitesHealthyRate  (phoreticMites * phoreticMitesHealthyRate + additionalMites / 2) / (phoreticMites + additionalMites)] ; assumes 50% of new mites are infected with virus
-    set PhoreticMites PhoreticMites + additionalMites
-    set TotalMites TotalMites + additionalMites
-  ]
-
-  ask miteOrganisers  ; update the number of invaded mites for each mite organiser:
-  [
-    let counter 0
-    set cohortInvadedMitesSum 0
-    foreach workerCellListCondensed
-    [ ?1 ->
-      set cohortInvadedMitesSum cohortInvadedMitesSum + (?1 * counter)
-      set counter counter + 1
-    ]
-    set counter 0
-    foreach droneCellListCondensed
-    [ ?1 ->
-      set cohortInvadedMitesSum cohortInvadedMitesSum + (?1 * counter)
-      set counter counter + 1
-    ]
-    set label cohortInvadedMitesSum
-  ]
-
-
-  ; end ***NEW FOR BEEHAVE_BEEMAPP2015***
-
-
-
-
 end
 
 ; ********************************************************************************************************************************************************************************
@@ -5845,7 +5663,7 @@ to GenericPlottingProc [ plotname plotChoice ]
       plotxy ticks (HoneyEnergyStore - HoneyEnergyStoreYesterday) / ( ENERGY_HONEY_per_g * 1000 )
     ]
 
- if plotChoice = "honey & pollen stores [kg]"
+ if plotChoice = "stores & hive [kg]"
  [ create-temporary-plot-pen "honey"
      set-plot-pen-color yellow
      plot (HoneyEnergyStore / ( ENERGY_HONEY_per_g * 1000 ) )  ;[ml] honey
@@ -5879,8 +5697,7 @@ to GenericPlottingProc [ plotname plotChoice ]
   if plotChoice = "proportion infected mites"
   [
     create-temporary-plot-pen "proportion"
-    ;if TotalMites > 0 [ plotxy ticks (1 - PhoreticMitesHealthyRate) ]  ; ***NEW FOR BEEHAVE_BEEMAPP2015***
-    plotxy ticks (1 - PhoreticMitesHealthyRate)  ; ***NEW FOR BEEHAVE_BEEMAPP2015***
+    if TotalMites > 0 [ plotxy ticks (1 - PhoreticMitesHealthyRate) ]
   ]
 
   if plotChoice = "aff & lifespan"
@@ -6113,8 +5930,8 @@ to WriteToFileProc
 
   let year ceiling (ticks / 365)
   foreach sort flowerPatches
-  [ ?1 ->
-    ask ?1
+  [
+    ask ?
     [
       file-print
          ( word year " " word ticks " " ForagingRounds " " word self
@@ -6126,8 +5943,8 @@ to WriteToFileProc
   ]
 
   foreach sort foragerSquadrons
-  [ ?1 ->
-    ask ?1
+  [
+    ask ?
     [
       file-print
         (word year " " word ticks " " ForagingRounds " "  word self
@@ -6135,30 +5952,6 @@ to WriteToFileProc
           " km: " mileometer)
     ]
   ]
-
-end
-
-; ********************************************************************************************************************************************************************************
-
-to-report DateREP
-  let month-names (list "January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December")
-  let days-in-months (list 31 28 31 30 31 30 31 31 30 31 30 31)
-
-
-  let year floor (ticks / 365.01) + 1
-  let month 0
-  let dayOfYear remainder ticks 365
-  if dayOfYear = 0 [ set dayOfYear 365 ]
-  let dayOfMonth 0
-  let sumDaysInMonths 0
-  while [ sumDaysInMonths < dayOfYear ]
-  [
-    set month month + 1
-    set sumDaysInMonths sumDaysInMonths + item (month - 1) days-in-months
-    set dayOfMonth dayOfYear - sumDaysInMonths + item (month - 1) days-in-months
-  ]
-
-  report (word dayOfMonth "  " (item (month - 1) month-names) " " year )
 
 end
 
@@ -6194,314 +5987,27 @@ to ReadFileProc
         ]
     ] ; end "ifelse"
     [
-      user-message "There is no such INPUT_FILE in current directory!"
+      user-message "There is no such file in current directory!"
     ]
-end
-
-; ********************************************************************************************************************************************************************************
-
-
-to ReadBeeMappFileProc
-  ; reads colony data in from file, created by the BeeMapp app
-
-  ifelse ( file-exists? BeeMapp_FILE )
-    [
-      set AllBeeMappCorrectionsList []
-      file-open BeeMapp_FILE
-      let dustbin file-read-line
-        ; first line of input file with headings is read - but not used for anything
-
-      while [ not file-at-end? ]
-      [
-        set AllBeeMappCorrectionsList sentence AllBeeMappCorrectionsList ; 10 columns in BeeMapp input file:
-           (list (list ; repeat nColumns [ file-read ]
-                       file-read file-read file-read file-read
-                       file-read file-read file-read file-read
-                  ))]
-        set AssessmentNumber 0
-        ;(list (list file-read-line ))]
-
-
-        file-close
-    ] ; end "ifelse"
-    [
-      user-message "There is no such BeeMapp_FILE in current directory!"
-    ]
-end
-
-; ********************************************************************************************************************************************************************************
-
-to BeeMappCorrectionProc ; ***NEW FOR BEEHAVE_BEEMAPP2015***
-
-  let nextBeeMappCorrectionList item AssessmentNumber AllBeeMappCorrectionsList
-
-  if ticks = item 1 nextBeeMappCorrectionList  ; if day = date of colony next colony assessment
-  [
-   ; correct honey stores according to real honey stores:
-   set HoneyEnergyStore ENERGY_HONEY_per_g * 1000 * item 7 nextBeeMappCorrectionList ;
-
-   ; correct number of workers according to real colony size:
-   let correctedNumberWorkers item 6 nextBeeMappCorrectionList ;
-   if correctedNumberWorkers < 0 [ set correctedNumberWorkers 0 ]
-
-   ; correct # foragers:
-   let correctedNumberForagers correctedNumberWorkers * (totalForagers / (totalIHbees + totalForagers)) ;
-   let correctedNumberForagerSquadrons round (correctedNumberForagers / SQUADRON_SIZE)
-
-   ifelse correctedNumberForagerSquadrons * SQUADRON_SIZE < totalForagers
-   [
-      repeat totalForagers / SQUADRON_SIZE - correctedNumberForagerSquadrons    ; if foragers have to be REMOVED from the simulation
-       [ ask one-of foragerSquadrons [ die ] ]
-   ]
-   [
-     repeat correctedNumberForagerSquadrons - totalForagers / SQUADRON_SIZE     ; if foragers have to be ADDED to the simulation
-       [ ask one-of foragerSquadrons [ hatch 1 ] ]
-   ]
-
-   ; correct # in-hive bees:
-   let correctedNumberIHbees correctedNumberWorkers - correctedNumberForagerSquadrons * SQUADRON_SIZE
-   let changeNumberBy1 0
-
-   ifelse correctedNumberIHbees - totalIHbees < 0
-   [ set changeNumberBy1 -1 ]  ; if IHbees have to be REMOVED from the simulation
-   [ set changeNumberBy1 1 ]   ; if IHbees have to be ADDED to the simulation
-
-   repeat sqrt ((correctedNumberIHbees - totalIHbees) ^ 2)
-    [
-      let applyToCohorts IHbeecohorts
-      if count IHbeecohorts with [ number > 0 ] > 0
-        [ set applyToCohorts IHbeecohorts with [ number > 0 ]  ]
-
-      ;ask one-of IHbeecohorts with [ number > 0 ]
-      ask one-of applyToCohorts
-
-       [
-         let chooseBee 1 + random number  ; to determine which sub-cohort (healthy, infected as pupa or as adult) is affected, depending on number of bees in each cohort
-         let changeHealthy false
-         let changeInfPupa false
-         let changeInfAdult false
-
-         ; determine which sub-cohort is changed:
-         if chooseBee <= number_healthy
-            [ set changeHealthy true ]
-
-         if chooseBee > number_healthy and chooseBee <= number_healthy + number_infectedAsPupa
-            [ set changeInfPupa true ]
-
-         if chooseBee > number_healthy + number_infectedAsPupa and chooseBee <= number_healthy + number_infectedAsPupa + number_infectedAsAdult
-            [ set number_infectedAsAdult number_infectedAsAdult + changeNumberBy1 ]
-
-
-         ; do the change in numbers (separate step, otherwise errors might occur)
-         set number number + changeNumberBy1
-
-         if changeHealthy = true
-            [ set number_healthy number_healthy + changeNumberBy1 ]
-
-         if changeInfPupa = true
-            [ set number_infectedAsPupa number_infectedAsPupa + changeNumberBy1 ]
-
-         if changeInfAdult = true
-            [ set number_infectedAsAdult number_infectedAsAdult + changeNumberBy1 ]
-       ]
-    ]
-
-
-; NEW for new BeeMapp version that allows assessment of number of capped brood cells (31.03.2016):
-; correct # pupae:
-   let correctedNumberPupae item 5 nextBeeMappCorrectionList
-   if correctedNumberPupae > 1
-   [
-     set changeNumberBy1 0
-     ifelse correctedNumberPupae - (TotalPupae + TotalDronePupae) < 0
-     [ set changeNumberBy1 -1 ]  ; if IHbees have to be REMOVED from the simulation
-     [ set changeNumberBy1 1 ]   ; if IHbees have to be ADDED to the simulation
-     repeat sqrt ((correctedNumberPupae - (TotalPupae + TotalDronePupae)) ^ 2)
-      [
-        let applyToCohorts pupaeCohorts  ; defines the pupal cohorts that are affected, here: all worker pupae (only if no worker pupae at all are currently present in the model
-        if count pupaeCohorts with [ number > 0 ] > 0             ; otherwise (i.e. IF there are worker pupae present), then only those worker pupae cohorts with number > 0 are affected. Hence gaps (e.g. due to lack of pollen) still remain
-          [ set applyToCohorts pupaeCohorts with [ number > 0 ]  ]
-        if random (TotalPupae + TotalDronePupae) > TotalPupae ; in this case, the number of drone pupae will be modified
-        [
-          set applyToCohorts dronePupaeCohorts
-          if count dronePupaeCohorts with [ number > 0 ] > 0
-          [ set applyToCohorts pupaeCohorts with [ number > 0 ]  ]
-
-        ]
-         ask one-of applyToCohorts
-          [
-            set number number + changeNumberBy1
-            set number_healthy number_healthy + changeNumberBy1
-            set TotalPupae TotalPupae + changeNumberBy1
-          ]
-      ]
-   ]
-
-
-   ; PRESENCE/ABSENCE of QEL: -1: not assessed, 0: not present, 1: present
-   ; new queen, if no queen was found in real colony
-   if item 2 nextBeeMappCorrectionList = 0
-    [ set Queenage 0 ]
-
-
-   ; remove eggs, if no eggs were found in real colony
-   if item 3 nextBeeMappCorrectionList = 0
-   [
-     ask eggcohorts [ set number 0 ]
-     set NewWorkerLarvae 0
-     ask droneeggcohorts [ set number 0]
-     set NewDroneLarvae 0
-   ]
-
-   ; remove larvae, if no larvae were found in real colony
-   if item 4 nextBeeMappCorrectionList = 0
-   [
-     ask larvaecohorts [ set number 0 ]
-     set NewWorkerPupae 0
-     ask dronelarvaecohorts [ set number 0 ]
-     set NewDronePupae 0
-   ]
-
-   ; remove pupae, if no pupae were found in real colony
-   if item 5 nextBeeMappCorrectionList = 0
-   [
-     ask pupaecohorts [ set number 0 set number_healthy 0 set number_infectedAsPupa 0 ]
-     set NewIHbees 0
-     set NewIHbees_healthy 0
-     ask dronepupaecohorts [ set number 0 set number_healthy 0 set number_infectedAsPupa 0 ]
-     set NewDrones 0
-     set NewDrones_healthy 0
-   ]
-
-   if nextBeeMappCorrectionList != last AllBeeMappCorrectionsList ; if current correction is last item in file/AllBeeMappCorrectionsList, then AssessmentNumber is no longer increased
-   [
-     set AssessmentNumber AssessmentNumber + 1
-   ]
-  ]
-
-  CountingProc
-
-end
-
-
-; ********************************************************************************************************************************************************************************
-
-to DefaultProc
-; new variables:
-set AllowReinfestation FALSE
-;set BeeMapp_FILE "ColonyAssessment.txt"
-set ContinuousBroodRemoval FALSE
-set DroneBroodRemoval FALSE
-set EfficiencyPhoretic2 0
-; FrameType: no default setting
-; HiveType: no default setting
-set KillAllMitesInCells FALSE
-set KillAllMitesInCells2 FALSE
-set KillOpenBrood FALSE
-set KillOpenBrood2 FALSE
-set MiteReinfestation 0.1
-set ReadBeeMappFile FALSE
-set RemovalDay1 100
-set RemovalDay2 140
-set RemovalDay3 180
-set RemovalDay4 220
-set RemovalDay5 240
-set TreatmentDay2 0
-set TreatmentDuration2 0
-; WeatherFile: no default setting
-
-
-; new on interface (unchanged default values):
-set EfficiencyPhoretic 0.115
-set TreatmentDay 270   ; 270: 27.September
-set TreatmentDuration 40  ; (28-40d) Fries et al. 1994
-set AddedPollen_kg 0.5
-
-
-; old variables, new default values:
-set GenericPlot1 "honey & pollen stores [kg]"
-
-; old variables, removed:
-; set Testing "SIMULATION - NO TEST"
-; old & unchanged (Beehave2013):
-set AddPollen FALSE
-set AlwaysDance  FALSE
-set CONC_G  1.5
-set CONC_R 1.5
-set ConstantHandlingTime  FALSE
-set CRITICAL_COLONY_SIZE_WINTER  4000
-set Details  TRUE
-set DANCE_INTERCEPT 0 ; -17.7
-set DANCE_SLOPE 1.16
-set DETECT_PROB_G 0.2
-set DETECT_PROB_R 0.2
-set DISTANCE_G  500
-set DISTANCE_R 1500
-set DotDensity  0.01 ; (affects sequence of random numbers)
-set EggLaying_IH  TRUE
-set Experiment  "none"
-set FeedBees FALSE
-set ForagingMap "Nectar and Pollen" ; (affects sequence of random numbers)
-set GenericPlot2 "colony structure workers"
-set GenericPlot3 "broodcare [%]"
-set GenericPlot4 "mites"
-set GenericPlot5 "nectar availability [l]"
-set GenericPlot6 "pollen availability [kg]"
-set GenericPlot7 "mean trip duration"
-set GenericPlot8 "foragers today [%]"
-set HarvestingDay 135
-set HarvestingPeriod 80
-set HarvestingTH 20
-set HoneyHarvesting  FALSE
-set HoneyIdeal  FALSE
-;set INPUT_FILE  "Input_2-1_FoodFlow.txt"
-set MAX_BROODCELLS  2000099
-set MAX_km_PER_DAY  7299
-set MAX_HONEY_STORE_kg  50
-set MergeColoniesTH 5000
-set MergeWeakColonies FALSE
-set MiteReproductionModel  "Martin"
-set ModelledInsteadCalcDetectProb  FALSE
-set N_INITIAL_BEES  10000
-set N_INITIAL_MITES_HEALTHY  0
-set N_INITIAL_MITES_INFECTED  0
-set POLLEN_G_kg 1.0
-set POLLEN_R_kg 1.0
-set PollenIdeal  FALSE
-set ProbLazinessWinterbees 0 ; 0.7
-set QUANTITY_G_l 20
-set QUANTITY_R_l 20
-set QueenAgeing  FALSE
-; RAND_SEED: no default setting
-set ReadInfile false
-set RemainingHoney_kg  5
-set SeasonalFoodFlow TRUE
-set SHIFT_G -40
-set SHIFT_R 30
-set ShowAllPlots  TRUE
-set SQUADRON_SIZE  100
-set StopDead  TRUE
-set Swarming  "No swarming"
-set TIME_NECTAR_GATHERING 1200
-set TIME_POLLEN_GATHERING 600
-set VarroaTreatment  FALSE
-set Virus  "DWV"
-set Weather "Rothamsted (2009)" ; "Rothamsted (2009-2011)"
-set WriteFile  FALSE
-;set X_Days  7
-
-
 end
 
 ; ********************************************************************************************************************************************************************************
 ; ***   END   *********   END   *********   END   *********   END   *********   END   *********   END   *********   END   *********   END   *********   END   *********   END   **
 ; ********************************************************************************************************************************************************************************
+
+
+
+
+
+
+
+
 @#$#@#$#@
 GRAPHICS-WINDOW
 0
 10
-561
-717
+563
+739
 -1
 -1
 8.52
@@ -6518,8 +6024,8 @@ GRAPHICS-WINDOW
 44
 -71
 10
-1
-1
+0
+0
 1
 ticks
 30.0
@@ -6547,7 +6053,7 @@ BUTTON
 634
 724
 1 Day
-StartProc
+StartProc\n
 NIL
 1
 T
@@ -6564,7 +6070,7 @@ BUTTON
 669
 686
 Setup
-Setup
+Setup\n
 NIL
 1
 T
@@ -6609,7 +6115,7 @@ BUTTON
 706
 724
 1 Month
-if ticks = 0 [ StartProc ] ; to set date to 1 January\nlet days-in-months (list 31 28 31 30 31 30 31 31 30 31 30 31)\nlet month 0\nlet dayOfYear remainder ticks 365.01\n  let dayOfMonth 0\n  let sumDaysInMonths 0\n  while [ sumDaysInMonths < dayOfYear ]\n  [\n    set month month + 1\n    set sumDaysInMonths sumDaysInMonths + item (month - 1) days-in-months\n    set dayOfMonth dayOfYear - sumDaysInMonths + item (month - 1) days-in-months\n  ]\n\nrepeat item (month - 1) days-in-months [ StartProc ]\n\n;ifelse ticks = 0\n; [ repeat 31 [ StartProc ] ]\n; [ repeat item (month - 1) days-in-months [ StartProc ] ]
+repeat 30 [ StartProc ]\n
 NIL
 1
 T
@@ -6620,33 +6126,55 @@ NIL
 NIL
 1
 
+MONITOR
+1077
+556
+1157
+601
+Followers R
+[ danceFollowersNectar ] of flowerPatch 0
+2
+1
+11
+
+MONITOR
+1158
+557
+1238
+602
+Followers G
+[ danceFollowersNectar ] of flowerPatch 1
+2
+1
+11
+
 INPUTBOX
 998
-139
+81
 1098
-199
+141
 QUANTITY_R_l
-20.0
+20
 1
 0
 Number
 
 INPUTBOX
 1098
-139
+81
 1201
-199
+141
 QUANTITY_G_l
-20.0
+20
 1
 0
 Number
 
 INPUTBOX
 998
-199
+141
 1098
-259
+201
 CONC_R
 1.5
 1
@@ -6655,9 +6183,9 @@ Number
 
 INPUTBOX
 1098
-199
+141
 1201
-259
+201
 CONC_G
 1.5
 1
@@ -6666,31 +6194,31 @@ Number
 
 INPUTBOX
 998
-320
+262
 1099
-380
+322
 DISTANCE_R
-1500.0
+1500
 1
 0
 Number
 
 INPUTBOX
 1098
-319
+261
 1201
-379
+321
 DISTANCE_G
-500.0
+500
 1
 0
 Number
 
 INPUTBOX
 998
-379
+321
 1099
-439
+381
 DETECT_PROB_R
 0.2
 1
@@ -6699,9 +6227,9 @@ Number
 
 INPUTBOX
 1099
-379
+321
 1201
-439
+381
 DETECT_PROB_G
 0.2
 1
@@ -6714,16 +6242,16 @@ INPUTBOX
 1200
 70
 N_INITIAL_BEES
-10000.0
+10000
 1
 0
 Number
 
 SWITCH
-229
-1508
-420
-1541
+234
+1916
+425
+1949
 EggLaying_IH
 EggLaying_IH
 0
@@ -6731,10 +6259,10 @@ EggLaying_IH
 -1000
 
 BUTTON
-664
-1406
-773
-1439
+881
+1859
+990
+1892
 close file
 file-close
 NIL
@@ -6748,10 +6276,10 @@ NIL
 1
 
 BUTTON
-664
-1372
-773
-1405
+881
+1825
+990
+1858
 write file
 createOutputFileProc
 NIL
@@ -6765,10 +6293,10 @@ NIL
 1
 
 SWITCH
-775
-1406
-882
-1439
+992
+1859
+1099
+1892
 writeFile
 writeFile
 1
@@ -6776,10 +6304,10 @@ writeFile
 -1000
 
 SWITCH
-775
-1372
-882
-1405
+992
+1825
+1099
+1858
 details
 details
 0
@@ -6787,24 +6315,46 @@ details
 -1000
 
 INPUTBOX
-1444
-599
-1584
-659
+458
+1848
+651
+1908
 MAX_HONEY_STORE_kg
-50.0
+50
 1
 0
 Number
 
-SWITCH
-666
-1508
-882
-1541
-stopDead
-stopDead
+MONITOR
+674
+601
+724
+646
+Month
+floor(day / (365.25 / 12)) + 1
+17
 1
+11
+
+MONITOR
+624
+601
+674
+646
+Day
+ceiling (day mod 30.4374999)
+1
+1
+11
+
+SWITCH
+883
+1961
+1099
+1994
+stopDead
+stopDead
+0
 1
 -1000
 
@@ -6821,21 +6371,31 @@ INPUTBOX
 1099
 70
 RAND_SEED
-1.0
+0
 1
 0
 Number
 
 SWITCH
-1753
+1076
 442
-1980
+1236
 475
 ReadInfile
 ReadInfile
 1
 1
 -1000
+
+CHOOSER
+995
+396
+1236
+441
+INPUT_FILE
+INPUT_FILE
+"Input_2-1_FoodFlow.txt" "Input_2-1_FoodFlow_RRes.txt"
+1
 
 TEXTBOX
 1036
@@ -6848,10 +6408,10 @@ TEXTBOX
 1
 
 SWITCH
-666
-1440
-882
-1473
+883
+1893
+1099
+1926
 modelledInsteadCalcDetectProb
 modelledInsteadCalcDetectProb
 1
@@ -6859,64 +6419,74 @@ modelledInsteadCalcDetectProb
 -1000
 
 SWITCH
-1326
-483
-1504
-516
+149
+1212
+327
+1245
 HoneyHarvesting
 HoneyHarvesting
-0
+1
 1
 -1000
 
 INPUTBOX
-1325
-416
-1406
-476
+149
+1071
+236
+1131
 HarvestingDay
-135.0
+135
 1
 0
 Number
 
 INPUTBOX
-1584
-416
-1698
-476
+246
+1132
+360
+1192
 RemainingHoney_kg
-5.0
+5
 1
 0
 Number
 
 INPUTBOX
-1325
-10
-1490
-70
+8
+847
+173
+907
 N_INITIAL_MITES_HEALTHY
-10.0
+0
 1
 0
 Number
 
 CHOOSER
-1799
-56
-1929
-101
+882
+1778
+1098
+1823
+Testing
+Testing
+"SIMULATION - NO TEST"
+0
+
+CHOOSER
+8
+908
+173
+953
 MiteReproductionModel
 MiteReproductionModel
 "Fuchs&Langenbach" "Martin" "Martin+0" "Test" "No Mite Reproduction"
 1
 
 SWITCH
-1327
-109
-1477
-142
+150
+1025
+300
+1058
 VarroaTreatment
 VarroaTreatment
 1
@@ -6924,31 +6494,31 @@ VarroaTreatment
 -1000
 
 INPUTBOX
-1493
-10
-1658
-70
+176
+847
+341
+907
 N_INITIAL_MITES_INFECTED
-10.0
+0
 1
 0
 Number
 
 CHOOSER
-1799
-10
-1929
-55
+176
+909
+341
+954
 Virus
 Virus
 "DWV" "APV" "benignDWV" "modifiedAPV" "TestVirus"
 0
 
 MONITOR
-1879
-999
-2011
-1044
+431
+955
+560
+1000
 rate healthy mites
 phoreticMitesHealthyRate
 5
@@ -6965,11 +6535,22 @@ healthy foragers\ninfected as adults\ninfected as pupae
 0.0
 1
 
+MONITOR
+724
+601
+774
+646
+Year
+ceiling (ticks / 365)
+1
+1
+11
+
 SWITCH
-223
-1311
-434
-1344
+228
+1719
+439
+1752
 AlwaysDance
 AlwaysDance
 1
@@ -6977,20 +6558,20 @@ AlwaysDance
 -1000
 
 CHOOSER
-461
-1473
-652
-1518
+154
+1500
+331
+1545
 Experiment
 Experiment
 "none" "Experiment A" "Experiment B"
 0
 
 MONITOR
-1879
+431
+907
+559
 952
-2011
-997
 mites in cells
 totalMites -  phoreticMites * (1 - phoreticMitesHealthyRate)\n  - phoreticMites * phoreticMitesHealthyRate
 10
@@ -6998,10 +6579,10 @@ totalMites -  phoreticMites * (1 - phoreticMitesHealthyRate)\n  - phoreticMites 
 11
 
 SWITCH
-1587
-625
-1702
-658
+458
+1752
+651
+1785
 PollenIdeal
 PollenIdeal
 1
@@ -7009,10 +6590,10 @@ PollenIdeal
 -1000
 
 SWITCH
-1587
-590
-1701
-623
+458
+1717
+651
+1750
 HoneyIdeal
 HoneyIdeal
 1
@@ -7021,31 +6602,31 @@ HoneyIdeal
 
 INPUTBOX
 998
-259
+201
 1098
-319
+261
 POLLEN_R_kg
-1.0
+1
 1
 0
 Number
 
 INPUTBOX
 1098
-259
+201
 1201
-319
+261
 POLLEN_G_kg
-1.0
+1
 1
 0
 Number
 
 SWITCH
-7
-1313
-213
-1346
+12
+1721
+218
+1754
 SeasonalFoodFlow
 SeasonalFoodFlow
 0
@@ -7053,32 +6634,32 @@ SeasonalFoodFlow
 -1000
 
 INPUTBOX
-6
-1509
-103
-1569
+11
+1917
+108
+1977
 SHIFT_R
-30.0
+30
 1
 0
 Number
 
 INPUTBOX
-115
-1509
-214
-1569
+120
+1917
+219
+1977
 SHIFT_G
--40.0
+-40
 1
 0
 Number
 
 SWITCH
-7
-1347
-213
-1380
+12
+1755
+218
+1788
 ConstantHandlingTime
 ConstantHandlingTime
 1
@@ -7086,20 +6667,20 @@ ConstantHandlingTime
 -1000
 
 CHOOSER
-1329
-698
-1506
-743
+151
+1353
+328
+1398
 Swarming
 Swarming
 "No swarming" "Swarm control" "Swarming (parental colony)" "Swarming (prime swarm)"
-2
+0
 
 SWITCH
-229
-1543
-421
-1576
+234
+1951
+426
+1984
 QueenAgeing
 QueenAgeing
 1
@@ -7124,10 +6705,10 @@ NIL
 1
 
 BUTTON
-894
-1307
-999
-1340
+1112
+1711
+1217
+1744
 Kill!
 ask IHbeeCohorts [ if random-float 1 < 1 [ set number 0 set number_Healthy 0 set number_infectedAsPupa 0 set number_infectedAsAdult 0 ] ]\n;ask foragerSquadrons [ set infectionState \"infectedAsAdult\" ]\n;set honeyEnergyStore honeyEnergyStore * 0.01\n;ask foragerSquadrons [ die ]\n;set MORTALITY_INHIVE 0\n; set PollenStore_g 0\n; set honeyEnergyStore 1500\n;ask eggCohorts [set number 0]\n;ask droneEggCohorts [set number 0]\n;ask larvaeCohorts [set number 0]\n;ask droneLarvaeCohorts [set number 0]\n;ask pupaeCohorts [set number 0 set number_Healthy 0 set number_infectedAsPupa 0]\n;ask dronePupaeCohorts [set number 0 set number_Healthy 0 set number_infectedAsPupa 0]\n;ask IHbeeCohorts [ if random-float 1 < 1 [ set number 0 set number_Healthy 0 set number_infectedAsPupa 0 set number_infectedAsAdult 0 ] ]\n;ask foragerSquadrons [ set age age + 20 ]\n;ask foragerSquadrons with [ infectionState = \"infectedAsPupa\" ] [ die ];\n;set phoreticMites 0\nCountingProc
 NIL
@@ -7141,21 +6722,21 @@ NIL
 1
 
 INPUTBOX
-663
-1308
-773
-1368
+881
+1712
+987
+1772
 SQUADRON_SIZE
-100.0
+100
 1
 0
 Number
 
 PLOT
-1234
-844
-1873
-1018
+851
+470
+1074
+601
 Generic plot 3
 NIL
 NIL
@@ -7169,23 +6750,23 @@ true
 PENS
 
 INPUTBOX
-997
-74
-1201
-134
+677
+1716
+866
+1776
 CRITICAL_COLONY_SIZE_WINTER
-4000.0
+4000
 1
 0
 Number
 
 BUTTON
-894
-1341
-999
-1374
+1112
+1745
+1217
+1778
 show Patches
-type \"day: \" type day print \" \"\nforeach sort flowerpatches [ ?1 -> ask ?1 [\n type \"ID \" type who\n type \" patchType \" type patchType\n ;type \" oldPatchID \" type oldPatchID\n type \" distanceToColony \" type distanceToColony\n type \" x: \" type xcorMap\n type \" y: \" type ycorMap\n type \" size_sqm \" type size_sqm\n type \" Nectar_l \" type precision (quantityMyl / 1000000) 1\n type \" Pollen_kg \" type precision (amountPollen_g / 1000) 1\n type \" nectarConc \" type nectarConcFlowerPatch\n type \" EEF \" type precision eef 2\n type \" followers \" type precision danceFollowersNectar 2\n type \" detectionProbability \" type precision detectionProbability 4\n type \" handlingTimeNectar \" type round handlingTimeNectar\n type \" handlingTimePollen \" type round handlingTimePollen\n type \" total visitors \" type summedVisitors\n\n\n\n print \" \"\n] ]
+type \"day: \" type day print \" \"\nforeach sort flowerpatches [ ask ? [\n type \"ID \" type who\n type \" patchType \" type patchType \n ;type \" oldPatchID \" type oldPatchID\n type \" distanceToColony \" type distanceToColony \n type \" x: \" type xcorMap \n type \" y: \" type ycorMap \n type \" size_sqm \" type size_sqm \n type \" Nectar_l \" type precision (quantityMyl / 1000000) 1\n type \" Pollen_kg \" type precision (amountPollen_g / 1000) 1 \n type \" nectarConc \" type nectarConcFlowerPatch \n type \" EEF \" type precision eef 2\n type \" followers \" type precision danceFollowersNectar 2\n type \" detectionProbability \" type precision detectionProbability 4 \n type \" handlingTimeNectar \" type round handlingTimeNectar \n type \" handlingTimePollen \" type round handlingTimePollen\n type \" total visitors \" type summedVisitors\n\n \n \n print \" \"\n] ]
 NIL
 1
 T
@@ -7197,22 +6778,22 @@ NIL
 1
 
 CHOOSER
-1755
-699
-1982
-744
+1076
+476
+1237
+521
 Weather
 Weather
-"Weather File" "Rothamsted (2009)" "Rothamsted (2010)" "Rothamsted (2011)" "Rothamsted (2009-2011)" "Berlin (2000-2006)" "Berlin (2000)" "HoPoMo_Season" "HoPoMo_Season_Random" "Constant"
-1
+"Rothamsted (2009)" "Rothamsted (2010)" "Rothamsted (2011)" "Rothamsted (2009-2011)" "Berlin (2000-2006)" "Berlin (2000)" "HoPoMo_Season" "HoPoMo_Season_Random" "Constant"
+0
 
 BUTTON
-895
-1375
-999
-1408
+1113
+1779
+1217
+1812
 active patches
-type \"day: \" type day print \" \"\nforeach sort flowerpatches [ ?1 -> ask ?1\n[ if quantityMyl > 0 or amountPollen_g > 0\n[\n type \"ID \" type who\n; type \" patchType \" type patchType\n type \" distanceToColony \" type distanceToColony\n type \" size_sqm \" type size_sqm\n type \" Nectar_l \" type precision (quantityMyl / 1000000) 1\n type \" Pollen_kg \" type precision (amountPollen_g / 1000)1\n type \" nectarConc \" type nectarConcFlowerPatch\n type \" detectionProbability \" type precision detectionProbability 4\n type \" handlingTimeNectar \" type round handlingTimeNectar\n type \" handlingTimePollen \" type round handlingTimePollen\n type \" total visitors \" type summedVisitors\n\n\n\n print \" \"\n] ] ]
+type \"day: \" type day print \" \"\nforeach sort flowerpatches [ ask ? \n[ if quantityMyl > 0 or amountPollen_g > 0\n[\n type \"ID \" type who\n; type \" patchType \" type patchType \n type \" distanceToColony \" type distanceToColony \n type \" size_sqm \" type size_sqm \n type \" Nectar_l \" type precision (quantityMyl / 1000000) 1\n type \" Pollen_kg \" type precision (amountPollen_g / 1000)1 \n type \" nectarConc \" type nectarConcFlowerPatch \n type \" detectionProbability \" type precision detectionProbability 4 \n type \" handlingTimeNectar \" type round handlingTimeNectar \n type \" handlingTimePollen \" type round handlingTimePollen\n type \" total visitors \" type summedVisitors\n\n \n \n print \" \"\n] ] ]
 NIL
 1
 T
@@ -7224,12 +6805,12 @@ NIL
 1
 
 BUTTON
-895
-1410
-1000
-1443
+1113
+1814
+1218
+1847
 activityList
-type \"day: \" type day print \" \"\n;foreach sort foragerSquadrons with [km_today > 0]\nforeach sort foragerSquadrons\n  [ ?1 -> ask ?1\n     [ type who type \" \" type precision km_today 2 type \" \"  print activityList ]\n  ]
+type \"day: \" type day print \" \"\n;foreach sort foragerSquadrons with [km_today > 0]  \nforeach sort foragerSquadrons\n  [ ask ? \n     [ type who type \" \" type precision km_today 2 type \" \"  print activityList ]\n  ]
 NIL
 1
 T
@@ -7241,23 +6822,23 @@ NIL
 1
 
 INPUTBOX
-463
-1309
-652
-1369
+677
+1779
+866
+1839
 MAX_km_PER_DAY
-7299.0
+7299
 1
 0
 Number
 
 INPUTBOX
-1327
-599
-1443
-659
+458
+1787
+651
+1847
 MAX_BROODCELLS
-2000099.0
+2000099
 1
 0
 Number
@@ -7325,7 +6906,7 @@ MONITOR
 669
 73
 Nectar visits
-sum [ nectarVisitsToday ] of flowerpatches
+ sum [ nectarVisitsToday ] of flowerpatches\n
 17
 1
 11
@@ -7336,7 +6917,7 @@ MONITOR
 738
 73
 Pollen visits
-sum [ pollenVisitsToday ] of flowerpatches
+ sum [ pollenVisitsToday ] of flowerpatches
 17
 1
 11
@@ -7347,16 +6928,16 @@ INPUTBOX
 772
 784
 X_Days
-0.0
+1095
 1
 0
 Number
 
 SWITCH
-666
-1474
-882
-1507
+883
+1927
+1099
+1960
 ShowAllPlots
 ShowAllPlots
 0
@@ -7386,7 +6967,7 @@ BUTTON
 321
 43
 1 feeder
-set ReadInfile false\nset QUANTITY_R_l 20\nset QUANTITY_G_l 0\nset CONC_R 1.5\nset POLLEN_R_kg 2\nset POLLEN_G_kg 0\nset DISTANCE_R 1500\nset ConstantHandlingTime true\nset seasonalFoodFlow false\nset TIME_NECTAR_GATHERING 79  ;  Seeley\nset TIME_POLLEN_GATHERING 120 ; arbitrary\nset DETECT_PROB_R 0.01  ; 0.15   ; arbitrary\nSetup
+set ReadInfile false\nset QUANTITY_R_l 20\nset QUANTITY_G_l 0\nset CONC_R 1.5\nset POLLEN_R_kg 2\nset POLLEN_G_kg 0\nset DISTANCE_R 1500\nset ConstantHandlingTime true\nset seasonalFoodFlow false\nset TIME_NECTAR_GATHERING 79  ;  Seeley\nset TIME_POLLEN_GATHERING 120 ; arbitrary\nset DETECT_PROB_R 0.01  ; 0.15   ; arbitrary\nSetup\n\n
 NIL
 1
 T
@@ -7403,7 +6984,7 @@ BUTTON
 385
 43
 RRes
-set Weather  \"Rothamsted (2009-2011)\"\nset INPUT_FILE  \"Input_2-1_FoodFlow_RRes.txt\"\nset ReadInfile  TRUE\nSetup
+set Weather  \"Rothamsted (2009-2011)\"    \nset INPUT_FILE  \"Input_2-1_FoodFlow_RRes.txt\"       \nset ReadInfile  TRUE      \nSetup\n  \n
 NIL
 1
 T
@@ -7420,7 +7001,7 @@ BUTTON
 449
 43
 varroa
-set N_INITIAL_MITES_HEALTHY 10\nset N_INITIAL_MITES_INFECTED 10\nset Virus \"DWV\"\nset MiteReproductionModel \"Martin\"\nset GenericPlot4 \"mites\"\nSetup
+set N_INITIAL_MITES_HEALTHY 10\nset N_INITIAL_MITES_INFECTED 10\nset Virus \"DWV\"\nset MiteReproductionModel \"Martin\"\nset GenericPlot4 \"mites\"\nSetup\n
 NIL
 1
 T
@@ -7432,12 +7013,12 @@ NIL
 1
 
 BUTTON
-141
+138
 10
-197
+198
 43
 DEFAULT
-DefaultProc\nSetup
+set AddPollen FALSE\nset AlwaysDance  FALSE      \nset CONC_G  1.5          \nset CONC_R 1.5\nset ConstantHandlingTime  FALSE      \nset CRITICAL_COLONY_SIZE_WINTER  4000      \nset Details  TRUE   \nset DANCE_INTERCEPT 0 ; -17.7\nset DANCE_SLOPE 1.16          \nset DETECT_PROB_G 0.2  \nset DETECT_PROB_R 0.2\nset DISTANCE_G  500   \nset DISTANCE_R 1500 \nset DotDensity  0.01 ; (affects sequence of random numbers)\nset EggLaying_IH  TRUE           \nset Experiment  \"none\"      \nset FeedBees FALSE\nset ForagingMap \"Nectar and Pollen\" ; (affects sequence of random numbers) \nset GenericPlot1 \"aff & lifespan\"\nset GenericPlot2 \"colony structure workers\"\nset GenericPlot3 \"broodcare [%]\"\nset GenericPlot4 \"mites\"\nset GenericPlot5 \"nectar availability [l]\"\nset GenericPlot6 \"pollen availability [kg]\"\nset GenericPlot7 \"mean trip duration\"\nset GenericPlot8 \"foragers today [%]\"\nset HarvestingDay 135   \nset HarvestingPeriod 80\nset HarvestingTH 20\nset HoneyHarvesting  FALSE      \nset HoneyIdeal  FALSE      \n;set INPUT_FILE  \"Input_2-1_FoodFlow.txt\"      \nset MAX_BROODCELLS  2000099      \nset MAX_km_PER_DAY  7299      \nset MAX_HONEY_STORE_kg  50\nset MergeColoniesTH 5000\nset MergeWeakColonies FALSE     \nset MiteReproductionModel  \"Martin\"   \nset ModelledInsteadCalcDetectProb  FALSE   \nset N_INITIAL_BEES  10000      \nset N_INITIAL_MITES_HEALTHY  0      \nset N_INITIAL_MITES_INFECTED  0        \nset POLLEN_G_kg 1.0 \nset POLLEN_R_kg 1.0\nset PollenIdeal  FALSE     \nset ProbLazinessWinterbees 0 ; 0.7     \nset QUANTITY_G_l 20\nset QUANTITY_R_l 20\nset QueenAgeing  FALSE      \n; set RAND_SEED  0      \nset ReadInfile false\nset RemainingHoney_kg  5        \nset SeasonalFoodFlow TRUE      \nset SHIFT_G -40   \nset SHIFT_R 30\nset ShowAllPlots  TRUE      \nset SQUADRON_SIZE  100   \nset StopDead  TRUE         \nset Swarming  \"No swarming\"    \nset Testing  \"SIMULATION - NO TEST\"\nset TIME_NECTAR_GATHERING 1200\nset TIME_POLLEN_GATHERING 600\nset VarroaTreatment  FALSE      \nset Virus  \"DWV\"      \nset Weather \"Rothamsted (2009)\" ; \"Rothamsted (2009-2011)\"\nset WriteFile  FALSE      \n;set X_Days  7  \n\nSetup\n    \n\n
 NIL
 1
 T
@@ -7449,35 +7030,35 @@ NIL
 1
 
 INPUTBOX
-1408
-416
-1501
-476
+246
+1071
+360
+1131
 HarvestingPeriod
-80.0
+80
 1
 0
 Number
 
 INPUTBOX
-1504
-416
-1583
-476
+149
+1132
+236
+1192
 HarvestingTH
-20.0
+20
 1
 0
 Number
 
 SWITCH
-1505
-483
-1601
-516
+328
+1212
+521
+1245
 FeedBees
 FeedBees
-0
+1
 1
 -1000
 
@@ -7487,7 +7068,7 @@ BUTTON
 512
 43
 beekeeping
-set VarroaTreatment TRUE\nset FeedBees TRUE\nset HoneyHarvesting TRUE\nset MergeWeakColonies TRUE\nset MergeColoniesTH 5000\n;set AddPollen TRUE\nset HarvestingDay 135\nset HarvestingPeriod 80\nset RemainingHoney_kg 5\nset HarvestingTH 20\n;Setup\nask signs with [shape = \"jenny\"] [show-turtle]
+set VarroaTreatment TRUE\nset FeedBees TRUE\nset HoneyHarvesting TRUE\nset MergeWeakColonies TRUE \nset MergeColoniesTH 5000\n;set AddPollen TRUE\nset HarvestingDay 135\nset HarvestingPeriod 80\nset RemainingHoney_kg 5\nset HarvestingTH 20\n;Setup\nask signs with [shape = \"jenny\"] [show-turtle]\n\n
 NIL
 1
 T
@@ -7499,10 +7080,10 @@ NIL
 1
 
 BUTTON
-1327
-552
-1505
-585
+152
+1311
+330
+1344
 add fondant
 let addedFondant_kg 1 ; [kg]\nset HoneyEnergyStore HoneyEnergyStore +  addedFondant_kg * ENERGY_HONEY_per_g * 1000 ; adding fondant equivalent to 1 kg of honey\nask Signs with [shape = \"ambrosia\"] [ show-turtle ]\nset TotalHoneyFed_kg TotalHoneyFed_kg + addedFondant_kg\noutput-type \"Fondant provided [kg]: \" output-type precision addedFondant_kg 1 output-type \" total food added [kg]: \" output-print precision TotalHoneyFed_kg 1
 NIL
@@ -7516,23 +7097,23 @@ NIL
 1
 
 SWITCH
-1327
-517
-1504
-550
+150
+1246
+327
+1279
 MergeWeakColonies
 MergeWeakColonies
-0
+1
 1
 -1000
 
 INPUTBOX
-1330
-746
-1507
-806
+153
+1430
+330
+1490
 MergeColoniesTH
-5000.0
+5000
 1
 0
 Number
@@ -7555,10 +7136,10 @@ NIL
 1
 
 SWITCH
-1505
-517
-1601
-550
+328
+1247
+521
+1280
 AddPollen
 AddPollen
 1
@@ -7566,12 +7147,12 @@ AddPollen
 -1000
 
 BUTTON
-895
-1446
-1001
-1479
+1113
+1850
+1219
+1883
 visited patches
-type \"day: \" type day print \" \"\nforeach sort flowerpatches [ ?1 -> ask ?1\n[ if pollenVisitsToday > 0 or nectarVisitsToday > 0\n[\n type \"ID \" type who\n; type \" patchType \" type patchType\n type \" distanceToColony \" type distanceToColony\n type \" size_sqm \" type size_sqm\n type \" Nectar_l \" type precision (quantityMyl / 1000000) 1\n type \" Pollen_kg \" type precision (amountPollen_g / 1000)1\n type \" nectarConc \" type nectarConcFlowerPatch\n type \" detectionProbability \" type precision detectionProbability 4\n type \" handlingTimeNectar \" type round handlingTimeNectar\n type \" handlingTimePollen \" type round handlingTimePollen\n type \" pollenVisitsToday \" type pollenVisitsToday\n type \" nectarVisitsToday \" type nectarVisitsToday\n\n type \" total visitors \" type summedVisitors\n\n\n\n print \" \"\n] ] ]
+type \"day: \" type day print \" \"\nforeach sort flowerpatches [ ask ? \n[ if pollenVisitsToday > 0 or nectarVisitsToday > 0\n[\n type \"ID \" type who\n; type \" patchType \" type patchType \n type \" distanceToColony \" type distanceToColony \n type \" size_sqm \" type size_sqm \n type \" Nectar_l \" type precision (quantityMyl / 1000000) 1\n type \" Pollen_kg \" type precision (amountPollen_g / 1000)1 \n type \" nectarConc \" type nectarConcFlowerPatch \n type \" detectionProbability \" type precision detectionProbability 4 \n type \" handlingTimeNectar \" type round handlingTimeNectar \n type \" handlingTimePollen \" type round handlingTimePollen\n type \" pollenVisitsToday \" type pollenVisitsToday\n type \" nectarVisitsToday \" type nectarVisitsToday\n \n type \" total visitors \" type summedVisitors\n\n \n \n print \" \"\n] ] ]
 NIL
 1
 T
@@ -7588,7 +7169,7 @@ BUTTON
 260
 43
 2 patches
-set ReadInfile false\nset QUANTITY_R_l 20\nset QUANTITY_G_l 20\nset CONC_R 1.5\nset CONC_G 1.5\nset POLLEN_R_kg 1\nset POLLEN_G_kg 1\nset DISTANCE_R 1500\nset DISTANCE_G 500\nset ConstantHandlingTime FALSE\nset seasonalFoodFlow TRUE\nset SHIFT_R 30\nset shift_G -40\nset TIME_NECTAR_GATHERING 1200\nset TIME_POLLEN_GATHERING 600\nset DETECT_PROB_R 0.2\nset DETECT_PROB_G 0.2\nSetup
+set ReadInfile false\nset QUANTITY_R_l 20\nset QUANTITY_G_l 20\nset CONC_R 1.5\nset CONC_G 1.5\nset POLLEN_R_kg 1\nset POLLEN_G_kg 1\nset DISTANCE_R 1500\nset DISTANCE_G 500\nset ConstantHandlingTime FALSE\nset seasonalFoodFlow TRUE\nset SHIFT_R 30\nset shift_G -40\nset TIME_NECTAR_GATHERING 1200\nset TIME_POLLEN_GATHERING 600\nset DETECT_PROB_R 0.2\nset DETECT_PROB_G 0.2\nSetup\n\n
 NIL
 1
 T
@@ -7600,23 +7181,23 @@ NIL
 1
 
 INPUTBOX
-463
-1370
-652
-1430
+677
+1840
+866
+1900
 ProbLazinessWinterbees
-0.0
+0
 1
 0
 Number
 
 BUTTON
-1506
-552
-1700
-585
+331
+1311
+523
+1344
 add pollen
-;let addedPollen_kg 1\n  set PollenStore_g PollenStore_g + (addedPollen_kg * 1000)\n  ask Signs with [shape = \"pollengrain\"] [ show-turtle ]\n  set TotalPollenAdded TotalPollenAdded + addedPollen_kg\n  output-type \"Added pollen [kg]: \" output-type addedPollen_kg output-type \" total pollen added [kg]: \" output-print TotalPollenAdded
+  let addedPollen_kg 1\n  set PollenStore_g PollenStore_g + (addedPollen_kg * 1000)\n  ask Signs with [shape = \"pollengrain\"] [ show-turtle ]\n  set TotalPollenAdded TotalPollenAdded + addedPollen_kg\n  output-type \"Added pollen [kg]: \" output-type addedPollen_kg output-type \" total pollen added [kg]: \" output-print TotalPollenAdded
 NIL
 1
 T
@@ -7628,53 +7209,53 @@ NIL
 1
 
 TEXTBOX
-572
-1407
-640
-1435
+788
+1879
+856
+1907
 (if age > 100)
 11
 0.0
 1
 
 INPUTBOX
-6
-1383
-213
-1443
+11
+1791
+218
+1851
 TIME_NECTAR_GATHERING
-1200.0
+1200
 1
 0
 Number
 
 INPUTBOX
-6
-1445
-213
-1505
+11
+1853
+218
+1913
 TIME_POLLEN_GATHERING
-600.0
+600
 1
 0
 Number
 
 INPUTBOX
-279
-1417
-434
-1477
+284
+1825
+439
+1885
 DANCE_INTERCEPT
-0.0
+0
 1
 0
 Number
 
 INPUTBOX
-279
-1348
-434
-1408
+284
+1756
+439
+1816
 DANCE_SLOPE
 1.16
 1
@@ -7682,10 +7263,10 @@ DANCE_SLOPE
 Number
 
 BUTTON
-223
-1444
-278
-1477
+228
+1852
+283
+1885
 high
 ; from Seeley 1994\n; bee \"WY\" (lowest dance threshold)\nset DANCE_INTERCEPT -17.7\nset DANCE_SLOPE 1.16
 NIL
@@ -7699,10 +7280,10 @@ NIL
 1
 
 BUTTON
-223
-1413
-278
-1446
+228
+1821
+283
+1854
 mean
 ; from Seeley 1994: mean values\nset DANCE_INTERCEPT -11.1\nset DANCE_SLOPE 0.51
 NIL
@@ -7716,12 +7297,12 @@ NIL
 1
 
 BUTTON
-223
-1380
-278
-1413
+228
+1788
+283
+1821
 high 0
-; Seeley 1994: highest slope (from bee \"WY\")\n; but intercept = 0 to allow dancing for\n; far patches\nset DANCE_INTERCEPT 0\nset DANCE_SLOPE 1.16
+; Seeley 1994: highest slope (from bee \"WY\")\n; but intercept = 0 to allow dancing for \n; far patches\nset DANCE_INTERCEPT 0\nset DANCE_SLOPE 1.16
 NIL
 1
 T
@@ -7733,42 +7314,42 @@ NIL
 1
 
 TEXTBOX
-1210
-18
-1281
-44
+11
+817
+82
+839
 VARROA
 18
 0.0
 1
 
 TEXTBOX
-1207
-374
-1316
-399
+11
+984
+124
+1006
 BEEKEEPING
 18
 0.0
 1
 
 CHOOSER
-1233
-815
-1872
-860
+851
+441
+1074
+486
 GenericPlot3
 GenericPlot3
-"colony structure workers" "drones" "egg laying" "broodcare [%]" "age forager squadrons" "aff & lifespan" "mileometer" "honey & pollen stores [kg]" "colony weight [kg]" "consumption [g/day]" "honey gain [kg]" "mites" "proportion infected mites" "active foragers [%]" "active foragers today [%]" "foragingPeriod" "foraging probability" "foragers today [%]" "loads returning foragers [%]" "mean trip duration" "mean total km per day" "# completed foraging trips (E-3)" "trips per hour sunshine (E-3)" "nectar availability [l]" "pollen availability [kg]"
+"colony structure workers" "drones" "egg laying" "broodcare [%]" "age forager squadrons" "aff & lifespan" "mileometer" "stores & hive [kg]" "colony weight [kg]" "consumption [g/day]" "honey gain [kg]" "mites" "proportion infected mites" "active foragers [%]" "active foragers today [%]" "foragingPeriod" "foraging probability" "foragers today [%]" "loads returning foragers [%]" "mean trip duration" "mean total km per day" "# completed foraging trips (E-3)" "trips per hour sunshine (E-3)" "nectar availability [l]" "pollen availability [kg]"
 3
 
 BUTTON
-775
-1307
-882
-1369
+1158
+523
+1238
+556
 Version Test
-set Rand_seed 1\n\nDefaultProc\n\nset stopDead false\n\n; \"Varroa\"\nset N_INITIAL_MITES_HEALTHY 10\nset N_INITIAL_MITES_INFECTED 10\nset Virus \"DWV\"\nset MiteReproductionModel \"Martin\"\nset GenericPlot4 \"mites\"\nset AllowReinfestation true\nset KillOpenBrood true\nset KillOpenBrood2 true\nset KillAllMitesInCells true\nset KillAllMitesInCells2 true\nset DroneBroodRemoval true\nset ContinuousBroodRemoval true\nset TreatmentDay2 180\nset TreatmentDuration2 20\nset EfficiencyPhoretic2 0.05\n\n; \"Beekeeping\"\nset VarroaTreatment TRUE\nset FeedBees TRUE\nset HoneyHarvesting TRUE\nset MergeWeakColonies TRUE\nset MergeColoniesTH 5000\nset HarvestingDay 135\nset HarvestingPeriod 80\nset RemainingHoney_kg 5\nset HarvestingTH 20\nask signs with [shape = \"jenny\"] [show-turtle]\n\n; SWARMING\nset Swarming \"Swarming (prime swarm)\"\n\nSetup\nrepeat 365 [ startProc ]\nset VarroaTreatment false\nset Swarming \"Swarming (parental colony)\"\nset ContinuousBroodRemoval false\nset KillOpenBrood false\nset KillOpenBrood2 false\nset KillAllMitesInCells false\nset KillAllMitesInCells2 false\n\nrepeat 1825 [ startProc ]\n\nifelse\n(totalForagers = 5300)\nand ( totalIHbees = 41)\nand (totalMites = 7101)\nand (precision (HoneyEnergyStore / ( ENERGY_HONEY_per_g * 1000 )) 6 = 16.297696)\n[ user-message \"OK! No deviations detected from the Beehave_BeeMapp2016 version!\" ]\n[ ask patches [ set pcolor pink ]\n  user-message \"Caution! Changes have been made to the code! THIS IS NOT THE OFFICIAL VERSION OF Beehave_BeeMapp2015!\"]
+; Setting: \"Default\" + \"Varroa\" + \"Beekeeping\", \n; Swarming, Seed: 1\nset Rand_seed 1\n\n; \"Default\":\nset AddPollen FALSE\nset AlwaysDance  FALSE      \nset CONC_G  1.5          \nset CONC_R 1.5\nset ConstantHandlingTime  FALSE      \nset CRITICAL_COLONY_SIZE_WINTER  4000      \nset Details  TRUE   \nset DANCE_INTERCEPT 0 ; -17.7\nset DANCE_SLOPE 1.16          \nset DETECT_PROB_G 0.2  \nset DETECT_PROB_R 0.2\nset DISTANCE_G  500   \nset DISTANCE_R 1500 \nset DotDensity  0.01 ; (affects sequence of random numbers)\nset EggLaying_IH  TRUE           \nset Experiment  \"none\"      \nset FeedBees FALSE\nset ForagingMap \"Nectar and Pollen\" ; (affects sequence of random numbers) \nset GenericPlot1 \"aff & lifespan\"\nset GenericPlot2 \"colony structure workers\"\nset GenericPlot3 \"broodcare [%]\"\nset GenericPlot4 \"mites\"\nset GenericPlot5 \"nectar availability [l]\"\nset GenericPlot6 \"pollen availability [kg]\"\nset GenericPlot7 \"mean trip duration\"\nset GenericPlot8 \"foragers today [%]\"\nset HarvestingDay 135   \nset HarvestingPeriod 80\nset HarvestingTH 20\nset HoneyHarvesting  FALSE      \nset HoneyIdeal  FALSE      \n;set INPUT_FILE  \"Input_2-1_FoodFlow.txt\"      \nset MAX_BROODCELLS  2000099      \nset MAX_km_PER_DAY  7299      \nset MAX_HONEY_STORE_kg  50\nset MergeColoniesTH 5000\nset MergeWeakColonies FALSE     \nset MiteReproductionModel  \"Martin\"   \nset ModelledInsteadCalcDetectProb  FALSE   \nset N_INITIAL_BEES  10000      \nset N_INITIAL_MITES_HEALTHY  0      \nset N_INITIAL_MITES_INFECTED  0        \nset POLLEN_G_kg 1.0 \nset POLLEN_R_kg 1.0\nset PollenIdeal  FALSE     \nset ProbLazinessWinterbees 0 ; 0.7     \nset QUANTITY_G_l 20\nset QUANTITY_R_l 20\nset QueenAgeing  FALSE      \n; set RAND_SEED  0      \nset ReadInfile false\nset RemainingHoney_kg  5        \nset SeasonalFoodFlow TRUE      \nset SHIFT_G -40   \nset SHIFT_R 30\nset ShowAllPlots  TRUE      \nset SQUADRON_SIZE  100   \nset StopDead  TRUE         \nset Swarming  \"No swarming\"    \nset Testing  \"SIMULATION - NO TEST\"\nset TIME_NECTAR_GATHERING 1200\nset TIME_POLLEN_GATHERING 600\nset VarroaTreatment  FALSE      \nset Virus  \"DWV\"      \nset Weather \"Rothamsted (2009)\" ; \"Rothamsted (2009-2011)\"\nset WriteFile  FALSE      \n;set X_Days  7  \n\n; \"Varroa\"\nset N_INITIAL_MITES_HEALTHY 10\nset N_INITIAL_MITES_INFECTED 10\nset Virus \"DWV\"\nset MiteReproductionModel \"Martin\"\nset GenericPlot4 \"mites\"\n\n; \"Beekeeping\"\nset VarroaTreatment TRUE\nset FeedBees TRUE\nset HoneyHarvesting TRUE\nset MergeWeakColonies TRUE \nset MergeColoniesTH 5000\n;set AddPollen TRUE\nset HarvestingDay 135\nset HarvestingPeriod 80\nset RemainingHoney_kg 5\nset HarvestingTH 20\nask signs with [shape = \"jenny\"] [show-turtle]\n\n; SWARMING\nset Swarming \"Swarming (prime swarm)\"\n\nSetup\nrepeat 365 [ startProc ]\nset VarroaTreatment false\nset Swarming \"Swarming (parental colony)\"\nrepeat 1825 [ startProc ]\n\nifelse\n(totalForagers = 0)\nand ( totalIHbees = 0)\nand (totalMites = 8784)\nand (precision (HoneyEnergyStore / ( ENERGY_HONEY_per_g * 1000 )) 5 = 13.87055)\n[ user-message \"OK! No deviations detected from the official Beehave 2013 version!\" ]\n[ ask patches [ set pcolor pink ]\n  user-message \"Caution! Changes have been made to the code! THIS IS NOT THE OFFICIAL VERSION OF BEEHAVE 2013!\"]\n\n
 NIL
 1
 T
@@ -7781,9 +7362,9 @@ NIL
 
 PLOT
 565
-844
-1230
-1018
+470
+851
+601
 Generic plot 1
 NIL
 NIL
@@ -7799,7 +7380,7 @@ PENS
 PLOT
 775
 631
-1201
+1238
 783
 Generic plot 2
 NIL
@@ -7815,29 +7396,29 @@ PENS
 
 CHOOSER
 565
-816
-1230
-861
+441
+851
+486
 GenericPlot1
 GenericPlot1
-"colony structure workers" "drones" "egg laying" "broodcare [%]" "age forager squadrons" "aff & lifespan" "mileometer" "honey & pollen stores [kg]" "colony weight [kg]" "consumption [g/day]" "honey gain [kg]" "mites" "proportion infected mites" "active foragers [%]" "active foragers today [%]" "foragingPeriod" "foraging probability" "foragers today [%]" "loads returning foragers [%]" "mean trip duration" "mean total km per day" "# completed foraging trips (E-3)" "trips per hour sunshine (E-3)" "nectar availability [l]" "pollen availability [kg]"
-7
+"colony structure workers" "drones" "egg laying" "broodcare [%]" "age forager squadrons" "aff & lifespan" "mileometer" "stores & hive [kg]" "colony weight [kg]" "consumption [g/day]" "honey gain [kg]" "mites" "proportion infected mites" "active foragers [%]" "active foragers today [%]" "foragingPeriod" "foraging probability" "foragers today [%]" "loads returning foragers [%]" "mean trip duration" "mean total km per day" "# completed foraging trips (E-3)" "trips per hour sunshine (E-3)" "nectar availability [l]" "pollen availability [kg]"
+5
 
 CHOOSER
 774
 601
-1202
+1238
 646
 GenericPlot2
 GenericPlot2
-"colony structure workers" "drones" "egg laying" "broodcare [%]" "age forager squadrons" "aff & lifespan" "mileometer" "honey & pollen stores [kg]" "colony weight [kg]" "consumption [g/day]" "honey gain [kg]" "mites" "proportion infected mites" "active foragers [%]" "active foragers today [%]" "foragingPeriod" "foraging probability" "foragers today [%]" "loads returning foragers [%]" "mean trip duration" "mean total km per day" "# completed foraging trips (E-3)" "trips per hour sunshine (E-3)" "nectar availability [l]" "pollen availability [kg]"
+"colony structure workers" "drones" "egg laying" "broodcare [%]" "age forager squadrons" "aff & lifespan" "mileometer" "stores & hive [kg]" "colony weight [kg]" "consumption [g/day]" "honey gain [kg]" "mites" "proportion infected mites" "active foragers [%]" "active foragers today [%]" "foragingPeriod" "foraging probability" "foragers today [%]" "loads returning foragers [%]" "mean trip duration" "mean total km per day" "# completed foraging trips (E-3)" "trips per hour sunshine (E-3)" "nectar availability [l]" "pollen availability [kg]"
 0
 
 BUTTON
-481
-1227
-561
-1272
+1077
+523
+1157
+556
 clear all plots
 clear-all-plots
 NIL
@@ -7851,60 +7432,60 @@ NIL
 1
 
 TEXTBOX
-1207
-115
-1339
-133
+25
+1026
+157
+1044
 Varroa treatment:
 14
 0.0
 1
 
 TEXTBOX
-1211
-421
-1361
-439
+35
+1076
+185
+1094
 Honey harvest:
 14
 0.0
 1
 
 TEXTBOX
-1246
-488
-1312
-506
+69
+1219
+135
+1237
 Feeding:
 14
 0.0
 1
 
 TEXTBOX
-1220
-774
-1333
-792
+33
+1456
+146
+1474
 Merging colonies:
 14
 0.0
 1
 
 TEXTBOX
-466
-1448
-616
-1466
+12
+1517
+162
+1535
 Prepare experiments:\n
 14
 0.0
 1
 
 PLOT
-565
-471
-1202
-600
+563
+845
+1232
+1018
 Generic plot 4
 NIL
 NIL
@@ -7918,30 +7499,186 @@ true
 PENS
 
 CHOOSER
+563
+816
+1233
+861
+GenericPlot4
+GenericPlot4
+"colony structure workers" "drones" "egg laying" "broodcare [%]" "age forager squadrons" "aff & lifespan" "mileometer" "stores & hive [kg]" "colony weight [kg]" "consumption [g/day]" "honey gain [kg]" "mites" "proportion infected mites" "active foragers [%]" "active foragers today [%]" "foragingPeriod" "foraging probability" "foragers today [%]" "loads returning foragers [%]" "mean trip duration" "mean total km per day" "# completed foraging trips (E-3)" "trips per hour sunshine (E-3)" "nectar availability [l]" "pollen availability [kg]"
+11
+
+BUTTON
 565
-442
-1202
-487
-GenericPlot4
-GenericPlot4
-"colony structure workers" "drones" "egg laying" "broodcare [%]" "age forager squadrons" "aff & lifespan" "mileometer" "honey & pollen stores [kg]" "colony weight [kg]" "consumption [g/day]" "honey gain [kg]" "mites" "proportion infected mites" "active foragers [%]" "active foragers today [%]" "foragingPeriod" "foraging probability" "foragers today [%]" "loads returning foragers [%]" "mean trip duration" "mean total km per day" "# completed foraging trips (E-3)" "trips per hour sunshine (E-3)" "nectar availability [l]" "pollen availability [kg]"
+1466
+648
+1499
+Setup
+Setup
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+650
+1466
+733
+1499
+Run
+StartProc
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+565
+1500
+620
+1533
+1 day
+StartProc
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+622
+1500
+677
+1533
+1 month
+repeat 30 [ StartProc ]\n
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+741
+1475
+796
+1522
+x days
+repeat X_days [ startProc ]
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+679
+1500
+734
+1533
+1 year
+repeat 365 [ StartProc ]
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+MONITOR
+561
+1393
+620
+1438
+julian day
+day
+17
+1
+11
+
+MONITOR
+621
+1393
+671
+1438
+day
+ceiling (day mod 30.4374999)
+17
+1
+11
+
+MONITOR
+672
+1393
+722
+1438
+month
+floor(day / (365.25 / 12)) + 1
+17
+1
+11
+
+MONITOR
+724
+1393
+774
+1438
+year
+ceiling (ticks / 365)
+17
+1
 11
 
 TEXTBOX
-9
-1243
-159
-1265
+563
+1445
+615
+1463
+Control:
+14
+0.0
+1
+
+TEXTBOX
+14
+1651
+164
+1673
 ADVANCED INPUT
 18
 0.0
 1
 
 PLOT
-5
-845
-564
-1018
+563
+1048
+900
+1201
 Generic plot 5
 NIL
 NIL
@@ -7955,10 +7692,10 @@ true
 PENS
 
 PLOT
-4
-1051
-563
-1224
+901
+1048
+1232
+1201
 Generic plot 6
 NIL
 NIL
@@ -7972,10 +7709,10 @@ true
 PENS
 
 PLOT
-565
-1050
-1233
-1224
+563
+1235
+903
+1365
 Generic plot 7
 NIL
 NIL
@@ -7989,10 +7726,10 @@ true
 PENS
 
 PLOT
+904
 1234
-1050
-1875
-1224
+1231
+1504
 Generic plot 8
 NIL
 NIL
@@ -8006,140 +7743,178 @@ true
 PENS
 
 CHOOSER
-4
-816
 563
-861
+1019
+899
+1064
 GenericPlot5
 GenericPlot5
-"colony structure workers" "drones" "egg laying" "broodcare [%]" "age forager squadrons" "aff & lifespan" "mileometer" "honey & pollen stores [kg]" "colony weight [kg]" "consumption [g/day]" "honey gain [kg]" "mites" "proportion infected mites" "active foragers [%]" "active foragers today [%]" "foragingPeriod" "foraging probability" "foragers today [%]" "loads returning foragers [%]" "mean trip duration" "mean total km per day" "# completed foraging trips (E-3)" "trips per hour sunshine (E-3)" "nectar availability [l]" "pollen availability [kg]"
+"colony structure workers" "drones" "egg laying" "broodcare [%]" "age forager squadrons" "aff & lifespan" "mileometer" "stores & hive [kg]" "colony weight [kg]" "consumption [g/day]" "honey gain [kg]" "mites" "proportion infected mites" "active foragers [%]" "active foragers today [%]" "foragingPeriod" "foraging probability" "foragers today [%]" "loads returning foragers [%]" "mean trip duration" "mean total km per day" "# completed foraging trips (E-3)" "trips per hour sunshine (E-3)" "nectar availability [l]" "pollen availability [kg]"
 23
 
 CHOOSER
-4
-1020
-563
-1065
+901
+1019
+1232
+1064
 GenericPlot6
 GenericPlot6
-"colony structure workers" "drones" "egg laying" "broodcare [%]" "age forager squadrons" "aff & lifespan" "mileometer" "honey & pollen stores [kg]" "colony weight [kg]" "consumption [g/day]" "honey gain [kg]" "mites" "proportion infected mites" "active foragers [%]" "active foragers today [%]" "foragingPeriod" "foraging probability" "foragers today [%]" "loads returning foragers [%]" "mean trip duration" "mean total km per day" "# completed foraging trips (E-3)" "trips per hour sunshine (E-3)" "nectar availability [l]" "pollen availability [kg]"
+"colony structure workers" "drones" "egg laying" "broodcare [%]" "age forager squadrons" "aff & lifespan" "mileometer" "stores & hive [kg]" "colony weight [kg]" "consumption [g/day]" "honey gain [kg]" "mites" "proportion infected mites" "active foragers [%]" "active foragers today [%]" "foragingPeriod" "foraging probability" "foragers today [%]" "loads returning foragers [%]" "mean trip duration" "mean total km per day" "# completed foraging trips (E-3)" "trips per hour sunshine (E-3)" "nectar availability [l]" "pollen availability [kg]"
 24
 
 CHOOSER
-564
-1020
-1233
-1065
+563
+1205
+903
+1250
 GenericPlot7
 GenericPlot7
-"colony structure workers" "drones" "egg laying" "broodcare [%]" "age forager squadrons" "aff & lifespan" "mileometer" "honey & pollen stores [kg]" "colony weight [kg]" "consumption [g/day]" "honey gain [kg]" "mites" "proportion infected mites" "active foragers [%]" "active foragers today [%]" "foragingPeriod" "foraging probability" "foragers today [%]" "loads returning foragers [%]" "mean trip duration" "mean total km per day" "# completed foraging trips (E-3)" "trips per hour sunshine (E-3)" "nectar availability [l]" "pollen availability [kg]"
+"colony structure workers" "drones" "egg laying" "broodcare [%]" "age forager squadrons" "aff & lifespan" "mileometer" "stores & hive [kg]" "colony weight [kg]" "consumption [g/day]" "honey gain [kg]" "mites" "proportion infected mites" "active foragers [%]" "active foragers today [%]" "foragingPeriod" "foraging probability" "foragers today [%]" "loads returning foragers [%]" "mean trip duration" "mean total km per day" "# completed foraging trips (E-3)" "trips per hour sunshine (E-3)" "nectar availability [l]" "pollen availability [kg]"
 19
 
 CHOOSER
-1234
-1020
-1875
-1065
+904
+1205
+1232
+1250
 GenericPlot8
 GenericPlot8
-"colony structure workers" "drones" "egg laying" "broodcare [%]" "age forager squadrons" "aff & lifespan" "mileometer" "honey & pollen stores [kg]" "colony weight [kg]" "consumption [g/day]" "honey gain [kg]" "mites" "proportion infected mites" "active foragers [%]" "active foragers today [%]" "foragingPeriod" "foraging probability" "foragers today [%]" "loads returning foragers [%]" "mean trip duration" "mean total km per day" "# completed foraging trips (E-3)" "trips per hour sunshine (E-3)" "nectar availability [l]" "pollen availability [kg]"
+"colony structure workers" "drones" "egg laying" "broodcare [%]" "age forager squadrons" "aff & lifespan" "mileometer" "stores & hive [kg]" "colony weight [kg]" "consumption [g/day]" "honey gain [kg]" "mites" "proportion infected mites" "active foragers [%]" "active foragers today [%]" "foragingPeriod" "foraging probability" "foragers today [%]" "loads returning foragers [%]" "mean trip duration" "mean total km per day" "# completed foraging trips (E-3)" "trips per hour sunshine (E-3)" "nectar availability [l]" "pollen availability [kg]"
 17
 
+BUTTON
+780
+1392
+898
+1436
+clear all plots
+clear-all-plots
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
 TEXTBOX
-8
-1273
-150
-1307
-Red & green default flower patches:
+565
+1373
+602
+1394
+Date:
 14
 0.0
 1
 
 TEXTBOX
-1223
-608
-1373
-626
+18
+1691
+168
+1709
+Flower patches:
+14
+0.0
+1
+
+TEXTBOX
+460
+1689
+610
+1707
 Colony stores:
 14
 0.0
 1
 
 TEXTBOX
-36
-1571
-186
-1589
+41
+1979
+191
+1997
 (timing of patch phenology)
 11
 0.0
 1
 
 TEXTBOX
-229
-1285
-379
-1303
+234
+1693
+384
+1711
 Dancing:
 14
 0.0
 1
 
 TEXTBOX
-465
-1284
-633
-1318
+683
+1688
+851
+1722
 Colony & bee behaviour:
 14
 0.0
 1
 
 TEXTBOX
-230
-1483
-325
-1501
+235
+1891
+330
+1909
 Egg laying:
 14
 0.0
 1
 
 TEXTBOX
-1256
-715
-1334
-733
+61
+1362
+139
+1380
 Swarming:
 14
 0.0
 1
 
 TEXTBOX
-666
-1284
-816
-1302
+884
+1688
+1034
+1706
 Program:
 14
 0.0
 1
 
 TEXTBOX
-897
-1283
-997
-1301
+1115
+1687
+1215
+1705
 Special output:
 14
 0.0
 1
 
 MONITOR
-1879
+800
+1476
+855
+1521
+x days
+X_days
+17
+1
+11
+
+MONITOR
+431
+861
+559
 906
-2011
-951
 phoretic mites INFECTED
 phoreticMites * (1 - phoreticMitesHealthyRate)
 2
@@ -8147,10 +7922,10 @@ phoreticMites * (1 - phoreticMitesHealthyRate)
 11
 
 MONITOR
-1879
+431
+815
+559
 860
-2011
-905
 phoretic mites healthy
 phoreticMites * phoreticMitesHealthyRate
 2
@@ -8213,10 +7988,10 @@ mean [ age ] of foragerSquadrons
 11
 
 MONITOR
-1879
-1044
-2011
-1089
+431
+1003
+561
+1048
 mite fall
 DailyMiteFall
 17
@@ -8257,10 +8032,10 @@ MONITOR
 11
 
 MONITOR
-1879
-1135
-2012
-1180
+433
+1074
+559
+1119
 pollen store [kg]
 pollenStore_g / 1000
 3
@@ -8268,21 +8043,38 @@ pollenStore_g / 1000
 11
 
 MONITOR
-1879
-1180
-2012
-1225
+433
+1121
+560
+1166
 honey store [kg]
 HoneyEnergyStore / ( ENERGY_HONEY_per_g * 1000 )
 8
 1
 11
 
+BUTTON
+1113
+1886
+1220
+1919
+Video
+;; export movie of the view\nsetup\nmovie-start \"out.mov\"\nmovie-set-frame-rate 15\nmovie-grab-view ;; show the initial state\nrepeat 365\n[ StartProc \n   movie-grab-view \n ]\nmovie-close\n\n
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
 MONITOR
-1879
-1089
-2012
-1134
+300
+955
+432
+1000
 rate healthy foragers
 (count foragerSquadrons with [infectionState = \"healthy\"]) / (totalForagers / SQUADRON_SIZE)
 3
@@ -8290,10 +8082,10 @@ rate healthy foragers
 11
 
 BUTTON
-223
-1348
-278
-1381
+228
+1756
+283
+1789
 mean 0
 ; Seeley 1994: mean slope but intercept = 0\n;  to allow dancing for far patches\nset DANCE_INTERCEPT 0\nset DANCE_SLOPE 0.51
 NIL
@@ -8307,12 +8099,12 @@ NIL
 1
 
 BUTTON
-1517
-751
-1711
-805
-1-2 foraging file
-set ReadInfile TRUE\nset StopDead false\nSetup\nlet filename \"Input_1-2_Foraging.txt\"\nif file-exists? filename   ;; If the file already exists, we begin by deleting it, otherwise new data would be appended to the old contents.\n             [ file-delete filename ]\nfile-open filename\n\nfile-print count flowerPatches\nfile-print \"day who nectarVisits pollenVisits\"\nrepeat 365 [\n  startProc\n  foreach sort flowerpatches [ ?1 -> ask ?1 [\n    file-type day file-type \" \"\n    ;file-type who file-type \" \"\n    file-type oldPatchId file-type \" \"\n    file-type nectarVisitsToday file-type \" \"\n    file-type pollenVisitsToday file-print \" \"\n   ] ]\n] ; end repeat\nfile-close\nuser-message \"Input file ('Input_1-2_Foraging.txt') was created for the external landscape module BEESCOUT\"
+1114
+1923
+1222
+1956
+1-3 foraging file
+set INPUT_FILE  \"Input_2-1_FoodFlow.txt\" \nset ReadInfile TRUE\nSetup\nlet filename \"Input_1-3_Foraging.txt\" \nif file-exists? filename   ;; If the file already exists, we begin by deleting it, otherwise new data would be appended to the old contents.\n             [ file-delete filename ]\nfile-open filename    \n   \nfile-print count flowerPatches\nfile-print \"day who nectarVisits pollenVisits\"\nrepeat 365 [ \n  startProc\n  foreach sort flowerpatches [ ask ? [\n    file-type day file-type \" \"\n    file-type who file-type \" \"\n    file-type nectarVisitsToday file-type \" \"\n    file-type pollenVisitsToday file-print \" \"\n   ] ]\n] ; end repeat\nfile-close  \nuser-message \"Input file ('Input_1-3_Foraging.txt') was created for external landscape module\"
 NIL
 1
 T
@@ -8324,9 +8116,9 @@ NIL
 1
 
 MONITOR
-1879
+357
 814
-2010
+428
 859
 total mites
 totalMites
@@ -8334,477 +8126,13 @@ totalMites
 1
 11
 
-MONITOR
-624
-601
-772
-646
-Date & Year
-DateREP
-17
-1
-11
-
-INPUTBOX
-1755
-745
-1983
-805
-WeatherFile
-0
-1
-0
-String
-
-INPUTBOX
-1328
-145
-1444
-205
-TreatmentDay
-270.0
-1
-0
-Number
-
-INPUTBOX
-1445
-145
-1561
-205
-TreatmentDuration
-40.0
-1
-0
-Number
-
-INPUTBOX
-1562
-145
-1678
-205
-EfficiencyPhoretic
-0.115
-1
-0
-Number
-
-INPUTBOX
-1327
-215
-1443
-275
-TreatmentDay2
-180.0
-1
-0
-Number
-
-INPUTBOX
-1445
-215
-1560
-275
-TreatmentDuration2
-20.0
-1
-0
-Number
-
-INPUTBOX
-1561
-215
-1678
-275
-EfficiencyPhoretic2
-0.05
-1
-0
-Number
-
-MONITOR
-324
-1227
-401
-1272
-Followers R
-[ danceFollowersNectar ] of flowerPatch 0
-2
-1
-11
-
-MONITOR
-403
-1227
-480
-1272
-Followers G
-[ danceFollowersNectar ] of flowerPatch 1
-2
-1
-11
-
-MONITOR
-1813
-149
-1951
-194
-(est. efficiency phoretic 1)
-1 - ((1 - EfficiencyPhoretic) ^ TreatmentDuration)
-3
-1
-11
-
-MONITOR
-1814
-223
-1954
-268
-(est. efficiency phoretic 2)
-1 - ((1 - EfficiencyPhoretic2) ^ TreatmentDuration2)
-3
-1
-11
-
-SWITCH
-1755
-569
-1982
-602
-ReadBeeMappFile
-ReadBeeMappFile
-1
-1
--1000
-
-CHOOSER
-1064
-1310
-1252
-1355
-HiveType
-HiveType
-"National, WBC, Smith" "Langstroth" "Commercial" "Dadant"
-1
-
-CHOOSER
-1064
-1356
-1252
-1401
-FrameType
-FrameType
-"Standard brood/deep frame" "Extra deep/jumbo frame" "Shallow frame"
-2
-
-BUTTON
-1064
-1400
-1252
-1433
-show cells per frame
-let cellsPerFrame 0\nlet message \"\"\nif HiveType = \"National, WBC, Smith\"\n [\n   if FrameType = \"Standard brood/deep frame\" [ set cellsPerFrame 5400 ]\n   if FrameType = \"Extra deep/jumbo frame\" [ set cellsPerFrame 7700 ]\n   if FrameType = \"Shallow frame\" [ set cellsPerFrame 3400 ]\n ]\nif HiveType = \"Langstroth\"\n [\n   if FrameType = \"Standard brood/deep frame\" [ set cellsPerFrame 7200 ]\n   if FrameType = \"Extra deep/jumbo frame\" [ set cellsPerFrame 9000 ]\n   if FrameType = \"Shallow frame\" [ set cellsPerFrame 4000 ]\n ]\nif HiveType = \"Commercial\"\n [\n   if FrameType = \"Standard brood/deep frame\" [ set cellsPerFrame 6500 ]\n   if FrameType = \"Shallow frame\" [ set cellsPerFrame 4300 ]\n ]\nif HiveType = \"Dadant\"\n [\n   if FrameType = \"Standard brood/deep frame\" [ set cellsPerFrame 9000 ]\n   if FrameType = \"Shallow frame\" [ set cellsPerFrame 4800 ]\n ]\nifelse cellsPerFrame > 0\n [ set message (word \"Number of cells per frame (both sides): ca. \" cellsPerFrame) ]\n [ set message \"No data for this combination of hive and frame type\"]\n\nuser-message message
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-SWITCH
-1327
-277
-1499
-310
-DroneBroodRemoval
-DroneBroodRemoval
-0
-1
--1000
-
-INPUTBOX
-1502
-277
-1586
-337
-RemovalDay1
-100.0
-1
-0
-Number
-
-INPUTBOX
-1588
-277
-1672
-337
-RemovalDay2
-140.0
-1
-0
-Number
-
-INPUTBOX
-1673
-277
-1757
-337
-RemovalDay3
-180.0
-1
-0
-Number
-
-INPUTBOX
-1758
-277
-1841
-337
-RemovalDay4
-220.0
-1
-0
-Number
-
-INPUTBOX
-1843
-277
-1926
-337
-RemovalDay5
-240.0
-1
-0
-Number
-
-SWITCH
-1326
-311
-1499
-344
-ContinuousBroodRemoval
-ContinuousBroodRemoval
-1
-1
--1000
-
-SWITCH
-1679
-140
-1811
-173
-KillOpenBrood
-KillOpenBrood
-1
-1
--1000
-
-SWITCH
-1679
-208
-1811
-241
-KillOpenBrood2
-KillOpenBrood2
-1
-1
--1000
-
-SWITCH
-1679
-172
-1811
-205
-KillAllMitesInCells
-KillAllMitesInCells
-1
-1
--1000
-
-SWITCH
-1679
-242
-1812
-275
-KillAllMitesInCells2
-KillAllMitesInCells2
-1
-1
--1000
-
-INPUTBOX
-1659
-10
-1796
-70
-MiteReinfestation
-0.1
-1
-0
-Number
-
-SWITCH
-1660
-71
-1796
-104
-AllowReinfestation
-AllowReinfestation
-0
-1
--1000
-
-TEXTBOX
-1672
-51
-1822
-69
-additional mites per day
-11
-0.0
-1
-
-TEXTBOX
-1754
-369
-1904
-391
-FILES - in
-18
-0.0
-1
-
-TEXTBOX
-1757
-544
-1974
-578
-Colony assessment from BeeMapp:
-14
-0.0
-1
-
-TEXTBOX
-1755
-677
-1977
-711
-Weather file from Beehave weather:
-14
-0.0
-1
-
-TEXTBOX
-1754
-403
-1974
-437
-Food sources (e.g. from BeeMapp or BEESCOUT):
-14
-0.0
-1
-
-TEXTBOX
-1517
-695
-1667
-717
-FILES - out
-18
-0.0
-1
-
-TEXTBOX
-1517
-726
-1719
-760
-Foraging activity to BEESCOUT:
-14
-0.0
-1
-
-TEXTBOX
-1067
-1282
-1217
-1300
-Calculator: # cells
-14
-0.0
-1
-
-CHOOSER
-1753
-475
-1980
-520
-INPUT_FILE
-INPUT_FILE
-"Input_2-1_FoodFlow.txt" "Input_2-1_FoodFlow_RRes.txt" "Sources.txt"
-0
-
-CHOOSER
-1755
-602
-1982
-647
-BeeMapp_FILE
-BeeMapp_FILE
-"Assessments.txt"
-0
-
-TEXTBOX
-1836
-522
-1978
-540
-(right click & \"Edit\" to add more)
-9
-0.0
-1
-
-TEXTBOX
-1836
-652
-1975
-670
-(right click & \"Edit\" to add more)
-9
-0.0
-1
-
-INPUTBOX
-1602
-490
-1700
-550
-AddedPollen_kg
-0.5
-1
-0
-Number
-
-TEXTBOX
-1604
-478
-1708
-500
-Pollen added 1 March:
-9
-0.0
-1
-
 @#$#@#$#@
-# Terms of use of the software Beehave_BeeMapp (2015)
+# Terms of use of the software Beehave (2013)
 
 
-Beehave (2013) and Beehave_BeeMapp (2015) are implementations of the model BEEHAVE, developed by Matthias Becher and colleagues:
+Beehave (2013) is the implementation of the model BEEHAVE, developed by Matthias Becher and colleagues:
 
-Becher, M.A., Grimm, V., Thorbek, P., Horn, J., Kennedy, P.J. & Osborne, J.L. (2013) BEEHAVE: A systems model of honeybee colony dynamics and foraging to explore multifactorial causes of colony failure. _Journal of Applied Ecology_.
+Becher, M.A., Grimm, V., Thorbek, P., Horn, J., Kennedy, P.J. & Osborne, J.L. (2014) BEEHAVE: A systems model of honeybee colony dynamics and foraging to explore multifactorial causes of colony failure. _Journal of Applied Ecology_.
 
 
 This implementation is based on the software platform NetLogo (Wilensky 1999), and can be downloaded for free from http://beehave-model.net/.
@@ -8812,7 +8140,7 @@ This implementation is based on the software platform NetLogo (Wilensky 1999), a
 
 
 ## Copyright and Licence Information:
-© The University of Exeter, Matthias Becher 2015
+© The University of Exeter, Matthias Becher 2013
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
 
@@ -8829,6 +8157,8 @@ A copy of the GNU General Public License can be found at http://www.gnu.org/lice
 • We recommend that any publication or report based on using BEEHAVE shall include, in the Supplementary Material, the very NetLogo file that was used to produce the corresponding figure, table, or other kinds of results, as well as the "Experiments" in the BehaviorSpace and all necessary input files (see Supplementary Material of Becher et al. 2013 as example).
 
 • You might want to modify the NetLogo code implementing BEEHAVE, for example by adding further outputs, or running specific scenarios. To check whether you are still using the original version of BEEHAVE click the "Version Test" button, which runs the model under specific settings and defined random numbers and informs the user if the code was changed. Note that not all changes to the code can be detected by this test. If you changed the code, we recommend to document these changes in all detail and to provide a revised ODD model description in which the modified or added elements are highlighted.
+
+
 @#$#@#$#@
 default
 true
@@ -9186,30 +8516,6 @@ true
 Rectangle -7500403 true true 120 15 180 285
 Rectangle -7500403 true true 15 120 285 180
 
-crown
-false
-0
-Polygon -1184463 true false 15 150 45 225 255 225 285 150 15 150
-Polygon -1184463 true false 150 120 90 150 210 150 150 120
-Polygon -1184463 true false 45 120 15 150 75 150 45 120
-Polygon -1184463 true false 255 120 225 150 285 150 255 120
-Rectangle -1184463 true false 135 75 165 135
-Rectangle -1184463 true false 120 90 180 105
-Circle -2674135 true false 120 150 60
-
-crownx
-false
-0
-Polygon -1184463 true false 15 150 45 225 255 225 285 150 15 150
-Polygon -1184463 true false 150 120 90 150 210 150 150 120
-Polygon -1184463 true false 45 120 15 150 75 150 45 120
-Polygon -1184463 true false 255 120 225 150 285 150 255 120
-Rectangle -1184463 true false 135 75 165 135
-Rectangle -1184463 true false 120 90 180 105
-Circle -2674135 true false 120 150 60
-Polygon -2674135 true false 15 30 30 15 285 270 270 285 15 30
-Polygon -2674135 true false 30 285 15 270 270 15 285 30
-
 cylinder
 false
 0
@@ -9515,33 +8821,6 @@ Line -16777216 false 126 258 174 256
 Line -16777216 false 166 275 133 276
 Line -16777216 false 123 192 176 190
 
-queenx
-false
-6
-Circle -13840069 true true 114 48 72
-Circle -13840069 true true 101 112 98
-Circle -16777216 true false 107 79 86
-Line -13840069 true 150 70 105 30
-Line -13840069 true 150 70 195 30
-Circle -13840069 true true 109 170 78
-Circle -13840069 true true 125 230 50
-Polygon -7500403 true false 120 120 60 195 60 210 75 225 105 225 120 210 135 135 120 120
-Polygon -7500403 true false 180 120 240 195 240 210 225 225 195 225 180 210 165 135 180 120
-Circle -16777216 true false 116 58 19
-Circle -16777216 true false 163 56 19
-Circle -16777216 true false 112 69 19
-Circle -16777216 true false 168 67 19
-Circle -13840069 true true 115 199 70
-Circle -13791810 true false 121 95 60
-Circle -13840069 true true 137 267 26
-Circle -13840069 true true 132 253 34
-Line -16777216 false 117 228 181 227
-Line -16777216 false 126 258 174 256
-Line -16777216 false 166 275 133 276
-Line -16777216 false 123 192 176 190
-Polygon -2674135 true false 15 30 30 15 285 270 270 285
-Polygon -2674135 true false 30 285 15 270 270 15 285 30
-
 rabbit
 false
 0
@@ -9785,8 +9064,9 @@ false
 0
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
+
 @#$#@#$#@
-NetLogo 6.0.2
+NetLogo 5.3.1
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
@@ -10034,6 +9314,1431 @@ NetLogo 6.0.2
       <value value="180"/>
     </enumeratedValueSet>
   </experiment>
+  <experiment name="Becher_etal_2013_JApplEcol_Default" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="1095"/>
+    <metric>day</metric>
+    <metric>totalEggs</metric>
+    <metric>totalLarvae</metric>
+    <metric>totalPupae</metric>
+    <metric>totalIHbees</metric>
+    <metric>totalForagers</metric>
+    <metric>totalIHbees + totalForagers</metric>
+    <metric>totalDroneEggs</metric>
+    <metric>totalDroneLarvae</metric>
+    <metric>totalDronePupae</metric>
+    <metric>totalDrones</metric>
+    <metric>aff</metric>
+    <metric>sumLifeSpanAdultWorkers_t</metric>
+    <metric>deathsAdultWorkers_t</metric>
+    <metric>(honeyEnergyStore / ( ENERGY_HONEY_per_g * 1000 ) )</metric>
+    <metric>PollenStore_g</metric>
+    <metric>harvestedHoney_kg</metric>
+    <metric>phoreticMites</metric>
+    <metric>phoreticMitesHealthyRate</metric>
+    <enumeratedValueSet variable="RAND_SEED">
+      <value value="1"/>
+      <value value="2"/>
+      <value value="3"/>
+      <value value="4"/>
+      <value value="5"/>
+      <value value="6"/>
+      <value value="7"/>
+      <value value="8"/>
+      <value value="9"/>
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DISTANCE_G">
+      <value value="500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DISTANCE_R">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="QUANTITY_G_l">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="CRITICAL_COLONY_SIZE_WINTER">
+      <value value="4000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="TIME_NECTAR_GATHERING">
+      <value value="1200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="QUANTITY_R_l">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Swarming">
+      <value value="&quot;No swarming&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="modelledInsteadCalcDetectProb">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot3">
+      <value value="&quot;active foragers today [%]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MergeWeakColonies">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="POLLEN_R_kg">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="INPUT_FILE">
+      <value value="&quot;Input_2-1_FoodFlow_Exp2011good.txt&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DETECT_PROB_R">
+      <value value="0.2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ForagingMap">
+      <value value="&quot;Nectar and Pollen&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="X_Days">
+      <value value="134"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="QueenAgeing">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ConstantHandlingTime">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="RemainingHoney_kg">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N_INITIAL_BEES">
+      <value value="10000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MAX_km_PER_DAY">
+      <value value="5099"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MAX_BROODCELLS">
+      <value value="2000099"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N_INITIAL_MITES_INFECTED">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MergeColoniesTH">
+      <value value="5000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="AlwaysDance">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="TIME_POLLEN_GATHERING">
+      <value value="600"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="VarroaTreatment">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MAX_HONEY_STORE_kg">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SHIFT_G">
+      <value value="-40"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="details">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot8">
+      <value value="&quot;foragers today [%]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DotDensity">
+      <value value="0.01"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DANCE_INTERCEPT">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot2">
+      <value value="&quot;colony structure workers&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SHIFT_R">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Testing">
+      <value value="&quot;SIMULATION - NO TEST&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HarvestingPeriod">
+      <value value="80"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="CONC_R">
+      <value value="1.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SQUADRON_SIZE">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="FeedBees">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot5">
+      <value value="&quot;nectar availability [l]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DETECT_PROB_G">
+      <value value="0.2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SeasonalFoodFlow">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DANCE_SLOPE">
+      <value value="1.16"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="EggLaying_IH">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Experiment">
+      <value value="&quot;none&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HarvestingTH">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N_INITIAL_MITES_HEALTHY">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="PollenIdeal">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ProbLazinessWinterbees">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="stopDead">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot1">
+      <value value="&quot;trips per hour sunshine (E-3)&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Virus">
+      <value value="&quot;DWV&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot4">
+      <value value="&quot;mites&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="AddPollen">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HoneyHarvesting">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot6">
+      <value value="&quot;pollen availability [kg]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ReadInfile">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="CONC_G">
+      <value value="1.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ShowAllPlots">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Weather">
+      <value value="&quot;Rothamsted (2009)&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot7">
+      <value value="&quot;colony structure workers&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="POLLEN_G_kg">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="writeFile">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MiteReproductionModel">
+      <value value="&quot;Martin&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HoneyIdeal">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HarvestingDay">
+      <value value="135"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Becher_etal_2013_JApplEcol_Artificial-Weather" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="1095"/>
+    <metric>day</metric>
+    <metric>totalEggs</metric>
+    <metric>totalLarvae</metric>
+    <metric>totalPupae</metric>
+    <metric>totalIHbees</metric>
+    <metric>totalForagers</metric>
+    <metric>totalIHbees + totalForagers</metric>
+    <metric>totalDroneEggs</metric>
+    <metric>totalDroneLarvae</metric>
+    <metric>totalDronePupae</metric>
+    <metric>totalDrones</metric>
+    <metric>aff</metric>
+    <metric>sumLifeSpanAdultWorkers_t</metric>
+    <metric>deathsAdultWorkers_t</metric>
+    <metric>(honeyEnergyStore / ( ENERGY_HONEY_per_g * 1000 ) )</metric>
+    <metric>PollenStore_g</metric>
+    <metric>harvestedHoney_kg</metric>
+    <metric>phoreticMites</metric>
+    <metric>phoreticMitesHealthyRate</metric>
+    <enumeratedValueSet variable="RAND_SEED">
+      <value value="1"/>
+      <value value="2"/>
+      <value value="3"/>
+      <value value="4"/>
+      <value value="5"/>
+      <value value="6"/>
+      <value value="7"/>
+      <value value="8"/>
+      <value value="9"/>
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Weather">
+      <value value="&quot;HoPoMo_Season&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DISTANCE_G">
+      <value value="500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DISTANCE_R">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="QUANTITY_G_l">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="CRITICAL_COLONY_SIZE_WINTER">
+      <value value="4000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="TIME_NECTAR_GATHERING">
+      <value value="1200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="QUANTITY_R_l">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Swarming">
+      <value value="&quot;No swarming&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="modelledInsteadCalcDetectProb">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot3">
+      <value value="&quot;active foragers today [%]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MergeWeakColonies">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="POLLEN_R_kg">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="INPUT_FILE">
+      <value value="&quot;Input_2-1_FoodFlow_Exp2011good.txt&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DETECT_PROB_R">
+      <value value="0.2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ForagingMap">
+      <value value="&quot;Nectar and Pollen&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="X_Days">
+      <value value="134"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="QueenAgeing">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ConstantHandlingTime">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="RemainingHoney_kg">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N_INITIAL_BEES">
+      <value value="10000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MAX_km_PER_DAY">
+      <value value="5099"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MAX_BROODCELLS">
+      <value value="2000099"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N_INITIAL_MITES_INFECTED">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MergeColoniesTH">
+      <value value="5000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="AlwaysDance">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="TIME_POLLEN_GATHERING">
+      <value value="600"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="VarroaTreatment">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MAX_HONEY_STORE_kg">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SHIFT_G">
+      <value value="-40"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="details">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot8">
+      <value value="&quot;foragers today [%]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DotDensity">
+      <value value="0.01"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DANCE_INTERCEPT">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot2">
+      <value value="&quot;colony structure workers&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SHIFT_R">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Testing">
+      <value value="&quot;SIMULATION - NO TEST&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HarvestingPeriod">
+      <value value="80"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="CONC_R">
+      <value value="1.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SQUADRON_SIZE">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="FeedBees">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot5">
+      <value value="&quot;nectar availability [l]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DETECT_PROB_G">
+      <value value="0.2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SeasonalFoodFlow">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DANCE_SLOPE">
+      <value value="1.16"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="EggLaying_IH">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Experiment">
+      <value value="&quot;none&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HarvestingTH">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N_INITIAL_MITES_HEALTHY">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="PollenIdeal">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ProbLazinessWinterbees">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="stopDead">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot1">
+      <value value="&quot;trips per hour sunshine (E-3)&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Virus">
+      <value value="&quot;DWV&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot4">
+      <value value="&quot;mites&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="AddPollen">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HoneyHarvesting">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot6">
+      <value value="&quot;pollen availability [kg]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ReadInfile">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="CONC_G">
+      <value value="1.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ShowAllPlots">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot7">
+      <value value="&quot;colony structure workers&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="POLLEN_G_kg">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="writeFile">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MiteReproductionModel">
+      <value value="&quot;Martin&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HoneyIdeal">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HarvestingDay">
+      <value value="135"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Becher_etal_2013_JApplEcol_IdealFood" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="1095"/>
+    <metric>day</metric>
+    <metric>totalEggs</metric>
+    <metric>totalLarvae</metric>
+    <metric>totalPupae</metric>
+    <metric>totalIHbees</metric>
+    <metric>totalForagers</metric>
+    <metric>totalIHbees + totalForagers</metric>
+    <metric>totalDroneEggs</metric>
+    <metric>totalDroneLarvae</metric>
+    <metric>totalDronePupae</metric>
+    <metric>totalDrones</metric>
+    <metric>aff</metric>
+    <metric>sumLifeSpanAdultWorkers_t</metric>
+    <metric>deathsAdultWorkers_t</metric>
+    <metric>(honeyEnergyStore / ( ENERGY_HONEY_per_g * 1000 ) )</metric>
+    <metric>PollenStore_g</metric>
+    <metric>harvestedHoney_kg</metric>
+    <metric>phoreticMites</metric>
+    <metric>phoreticMitesHealthyRate</metric>
+    <enumeratedValueSet variable="RAND_SEED">
+      <value value="1"/>
+      <value value="2"/>
+      <value value="3"/>
+      <value value="4"/>
+      <value value="5"/>
+      <value value="6"/>
+      <value value="7"/>
+      <value value="8"/>
+      <value value="9"/>
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HoneyIdeal">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="PollenIdeal">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Weather">
+      <value value="&quot;Rothamsted (2009)&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DISTANCE_G">
+      <value value="500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DISTANCE_R">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="QUANTITY_G_l">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="CRITICAL_COLONY_SIZE_WINTER">
+      <value value="4000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="TIME_NECTAR_GATHERING">
+      <value value="1200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="QUANTITY_R_l">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Swarming">
+      <value value="&quot;No swarming&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="modelledInsteadCalcDetectProb">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot3">
+      <value value="&quot;active foragers today [%]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MergeWeakColonies">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="POLLEN_R_kg">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="INPUT_FILE">
+      <value value="&quot;Input_2-1_FoodFlow_Exp2011good.txt&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DETECT_PROB_R">
+      <value value="0.2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ForagingMap">
+      <value value="&quot;Nectar and Pollen&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="X_Days">
+      <value value="134"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="QueenAgeing">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ConstantHandlingTime">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="RemainingHoney_kg">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N_INITIAL_BEES">
+      <value value="10000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MAX_km_PER_DAY">
+      <value value="5099"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MAX_BROODCELLS">
+      <value value="2000099"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N_INITIAL_MITES_INFECTED">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MergeColoniesTH">
+      <value value="5000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="AlwaysDance">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="TIME_POLLEN_GATHERING">
+      <value value="600"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="VarroaTreatment">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MAX_HONEY_STORE_kg">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SHIFT_G">
+      <value value="-40"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="details">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot8">
+      <value value="&quot;foragers today [%]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DotDensity">
+      <value value="0.01"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DANCE_INTERCEPT">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot2">
+      <value value="&quot;colony structure workers&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SHIFT_R">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Testing">
+      <value value="&quot;SIMULATION - NO TEST&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HarvestingPeriod">
+      <value value="80"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="CONC_R">
+      <value value="1.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SQUADRON_SIZE">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="FeedBees">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot5">
+      <value value="&quot;nectar availability [l]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DETECT_PROB_G">
+      <value value="0.2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SeasonalFoodFlow">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DANCE_SLOPE">
+      <value value="1.16"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="EggLaying_IH">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Experiment">
+      <value value="&quot;none&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HarvestingTH">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N_INITIAL_MITES_HEALTHY">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ProbLazinessWinterbees">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="stopDead">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot1">
+      <value value="&quot;trips per hour sunshine (E-3)&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Virus">
+      <value value="&quot;DWV&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot4">
+      <value value="&quot;mites&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="AddPollen">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HoneyHarvesting">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot6">
+      <value value="&quot;pollen availability [kg]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ReadInfile">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="CONC_G">
+      <value value="1.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ShowAllPlots">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot7">
+      <value value="&quot;colony structure workers&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="POLLEN_G_kg">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="writeFile">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MiteReproductionModel">
+      <value value="&quot;Martin&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HarvestingDay">
+      <value value="135"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Becher_etal_2013_JApplEcol_Varroa" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="1825"/>
+    <metric>day</metric>
+    <metric>totalEggs</metric>
+    <metric>totalLarvae</metric>
+    <metric>totalPupae</metric>
+    <metric>totalIHbees</metric>
+    <metric>totalForagers</metric>
+    <metric>totalIHbees + totalForagers</metric>
+    <metric>totalDroneEggs</metric>
+    <metric>totalDroneLarvae</metric>
+    <metric>totalDronePupae</metric>
+    <metric>totalDrones</metric>
+    <metric>aff</metric>
+    <metric>sumLifeSpanAdultWorkers_t</metric>
+    <metric>deathsAdultWorkers_t</metric>
+    <metric>(honeyEnergyStore / ( ENERGY_HONEY_per_g * 1000 ) )</metric>
+    <metric>PollenStore_g</metric>
+    <metric>harvestedHoney_kg</metric>
+    <metric>phoreticMites</metric>
+    <metric>phoreticMitesHealthyRate</metric>
+    <enumeratedValueSet variable="RAND_SEED">
+      <value value="1"/>
+      <value value="2"/>
+      <value value="3"/>
+      <value value="4"/>
+      <value value="5"/>
+      <value value="6"/>
+      <value value="7"/>
+      <value value="8"/>
+      <value value="9"/>
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Virus">
+      <value value="&quot;DWV&quot;"/>
+      <value value="&quot;APV&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MiteReproductionModel">
+      <value value="&quot;Martin&quot;"/>
+      <value value="&quot;Fuchs&amp;Langenbach&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="VarroaTreatment">
+      <value value="false"/>
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N_INITIAL_MITES_INFECTED">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N_INITIAL_MITES_HEALTHY">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DISTANCE_G">
+      <value value="250"/>
+      <value value="500"/>
+      <value value="1000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DISTANCE_R">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="QUANTITY_G_l">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="CRITICAL_COLONY_SIZE_WINTER">
+      <value value="4000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="TIME_NECTAR_GATHERING">
+      <value value="1200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="QUANTITY_R_l">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Swarming">
+      <value value="&quot;No swarming&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="modelledInsteadCalcDetectProb">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot3">
+      <value value="&quot;active foragers today [%]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MergeWeakColonies">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="POLLEN_R_kg">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="INPUT_FILE">
+      <value value="&quot;Input_2-1_FoodFlow_Exp2011good.txt&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DETECT_PROB_R">
+      <value value="0.2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ForagingMap">
+      <value value="&quot;Nectar and Pollen&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="X_Days">
+      <value value="134"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="QueenAgeing">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ConstantHandlingTime">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="RemainingHoney_kg">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N_INITIAL_BEES">
+      <value value="10000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MAX_km_PER_DAY">
+      <value value="5099"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MAX_BROODCELLS">
+      <value value="2000099"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MergeColoniesTH">
+      <value value="5000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="AlwaysDance">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="TIME_POLLEN_GATHERING">
+      <value value="600"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MAX_HONEY_STORE_kg">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SHIFT_G">
+      <value value="-40"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="details">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot8">
+      <value value="&quot;foragers today [%]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DotDensity">
+      <value value="0.01"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DANCE_INTERCEPT">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot2">
+      <value value="&quot;colony structure workers&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SHIFT_R">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Testing">
+      <value value="&quot;SIMULATION - NO TEST&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HarvestingPeriod">
+      <value value="80"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="CONC_R">
+      <value value="1.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SQUADRON_SIZE">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="FeedBees">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot5">
+      <value value="&quot;nectar availability [l]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DETECT_PROB_G">
+      <value value="0.2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SeasonalFoodFlow">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DANCE_SLOPE">
+      <value value="1.16"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="EggLaying_IH">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Experiment">
+      <value value="&quot;none&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HarvestingTH">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="PollenIdeal">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ProbLazinessWinterbees">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="stopDead">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot1">
+      <value value="&quot;trips per hour sunshine (E-3)&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot4">
+      <value value="&quot;mites&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="AddPollen">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HoneyHarvesting">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot6">
+      <value value="&quot;pollen availability [kg]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ReadInfile">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="CONC_G">
+      <value value="1.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ShowAllPlots">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Weather">
+      <value value="&quot;Rothamsted (2009)&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot7">
+      <value value="&quot;colony structure workers&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="POLLEN_G_kg">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="writeFile">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HoneyIdeal">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HarvestingDay">
+      <value value="135"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Becher_etal_2013_JApplEcol_Foraging-3dist-G" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="1825"/>
+    <metric>day</metric>
+    <metric>totalEggs</metric>
+    <metric>totalLarvae</metric>
+    <metric>totalPupae</metric>
+    <metric>totalIHbees</metric>
+    <metric>totalForagers</metric>
+    <metric>totalIHbees + totalForagers</metric>
+    <metric>totalDroneEggs</metric>
+    <metric>totalDroneLarvae</metric>
+    <metric>totalDronePupae</metric>
+    <metric>totalDrones</metric>
+    <metric>aff</metric>
+    <metric>sumLifeSpanAdultWorkers_t</metric>
+    <metric>deathsAdultWorkers_t</metric>
+    <metric>(honeyEnergyStore / ( ENERGY_HONEY_per_g * 1000 ) )</metric>
+    <metric>PollenStore_g</metric>
+    <metric>harvestedHoney_kg</metric>
+    <metric>phoreticMites</metric>
+    <metric>phoreticMitesHealthyRate</metric>
+    <enumeratedValueSet variable="RAND_SEED">
+      <value value="1"/>
+      <value value="2"/>
+      <value value="3"/>
+      <value value="4"/>
+      <value value="5"/>
+      <value value="6"/>
+      <value value="7"/>
+      <value value="8"/>
+      <value value="9"/>
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Virus">
+      <value value="&quot;DWV&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MiteReproductionModel">
+      <value value="&quot;Martin&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="VarroaTreatment">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N_INITIAL_MITES_INFECTED">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N_INITIAL_MITES_HEALTHY">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DISTANCE_G">
+      <value value="250"/>
+      <value value="500"/>
+      <value value="1000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DISTANCE_R">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="QUANTITY_G_l">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="CRITICAL_COLONY_SIZE_WINTER">
+      <value value="4000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="TIME_NECTAR_GATHERING">
+      <value value="1200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="QUANTITY_R_l">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Swarming">
+      <value value="&quot;No swarming&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="modelledInsteadCalcDetectProb">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot3">
+      <value value="&quot;active foragers today [%]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MergeWeakColonies">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="POLLEN_R_kg">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="INPUT_FILE">
+      <value value="&quot;Input_2-1_FoodFlow_Exp2011good.txt&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DETECT_PROB_R">
+      <value value="0.2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ForagingMap">
+      <value value="&quot;Nectar and Pollen&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="X_Days">
+      <value value="134"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="QueenAgeing">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ConstantHandlingTime">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="RemainingHoney_kg">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N_INITIAL_BEES">
+      <value value="10000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MAX_km_PER_DAY">
+      <value value="5099"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MAX_BROODCELLS">
+      <value value="2000099"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MergeColoniesTH">
+      <value value="5000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="AlwaysDance">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="TIME_POLLEN_GATHERING">
+      <value value="600"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MAX_HONEY_STORE_kg">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SHIFT_G">
+      <value value="-40"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="details">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot8">
+      <value value="&quot;foragers today [%]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DotDensity">
+      <value value="0.01"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DANCE_INTERCEPT">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot2">
+      <value value="&quot;colony structure workers&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SHIFT_R">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Testing">
+      <value value="&quot;SIMULATION - NO TEST&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HarvestingPeriod">
+      <value value="80"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="CONC_R">
+      <value value="1.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SQUADRON_SIZE">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="FeedBees">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot5">
+      <value value="&quot;nectar availability [l]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DETECT_PROB_G">
+      <value value="0.2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SeasonalFoodFlow">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DANCE_SLOPE">
+      <value value="1.16"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="EggLaying_IH">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Experiment">
+      <value value="&quot;none&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HarvestingTH">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="PollenIdeal">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ProbLazinessWinterbees">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="stopDead">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot1">
+      <value value="&quot;trips per hour sunshine (E-3)&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot4">
+      <value value="&quot;mites&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="AddPollen">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HoneyHarvesting">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot6">
+      <value value="&quot;pollen availability [kg]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ReadInfile">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="CONC_G">
+      <value value="1.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ShowAllPlots">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Weather">
+      <value value="&quot;Rothamsted (2009)&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot7">
+      <value value="&quot;colony structure workers&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="POLLEN_G_kg">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="writeFile">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HoneyIdeal">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HarvestingDay">
+      <value value="135"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Becher_etal_2013_JApplEcol_SquadronSize" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="365"/>
+    <metric>day</metric>
+    <metric>totalEggs</metric>
+    <metric>totalLarvae</metric>
+    <metric>totalPupae</metric>
+    <metric>totalIHbees</metric>
+    <metric>totalForagers</metric>
+    <metric>totalIHbees + totalForagers</metric>
+    <metric>totalDroneEggs</metric>
+    <metric>totalDroneLarvae</metric>
+    <metric>totalDronePupae</metric>
+    <metric>totalDrones</metric>
+    <metric>aff</metric>
+    <metric>sumLifeSpanAdultWorkers_t</metric>
+    <metric>deathsAdultWorkers_t</metric>
+    <metric>(honeyEnergyStore / ( ENERGY_HONEY_per_g * 1000 ) )</metric>
+    <metric>PollenStore_g</metric>
+    <metric>harvestedHoney_kg</metric>
+    <metric>phoreticMites</metric>
+    <metric>phoreticMitesHealthyRate</metric>
+    <enumeratedValueSet variable="RAND_SEED">
+      <value value="1"/>
+      <value value="2"/>
+      <value value="3"/>
+      <value value="4"/>
+      <value value="5"/>
+      <value value="6"/>
+      <value value="7"/>
+      <value value="8"/>
+      <value value="9"/>
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SQUADRON_SIZE">
+      <value value="1000"/>
+      <value value="500"/>
+      <value value="250"/>
+      <value value="125"/>
+      <value value="100"/>
+      <value value="50"/>
+      <value value="40"/>
+      <value value="25"/>
+      <value value="20"/>
+      <value value="10"/>
+      <value value="8"/>
+      <value value="5"/>
+      <value value="4"/>
+      <value value="2"/>
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N_INITIAL_MITES_HEALTHY">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot5">
+      <value value="&quot;nectar availability [l]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="details">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N_INITIAL_MITES_INFECTED">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DISTANCE_R">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Virus">
+      <value value="&quot;DWV&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ForagingMap">
+      <value value="&quot;Nectar and Pollen&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="writeFile">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="QUANTITY_G_l">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="X_Days">
+      <value value="134"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="CRITICAL_COLONY_SIZE_WINTER">
+      <value value="4000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SHIFT_G">
+      <value value="-40"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="TIME_NECTAR_GATHERING">
+      <value value="1200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="stopDead">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="POLLEN_R_kg">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DANCE_SLOPE">
+      <value value="1.16"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SeasonalFoodFlow">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HoneyHarvesting">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="QueenAgeing">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="SHIFT_R">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MAX_km_PER_DAY">
+      <value value="5099"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Swarming">
+      <value value="&quot;No swarming&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ProbLazinessWinterbees">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="AddPollen">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MergeWeakColonies">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ShowAllPlots">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot6">
+      <value value="&quot;pollen availability [kg]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot4">
+      <value value="&quot;mites&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Testing">
+      <value value="&quot;SIMULATION - NO TEST&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DANCE_INTERCEPT">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MAX_HONEY_STORE_kg">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Experiment">
+      <value value="&quot;none&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HarvestingDay">
+      <value value="135"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="RemainingHoney_kg">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N_INITIAL_BEES">
+      <value value="10000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="EggLaying_IH">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="CONC_G">
+      <value value="1.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="POLLEN_G_kg">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DETECT_PROB_G">
+      <value value="0.2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot7">
+      <value value="&quot;colony structure workers&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Weather">
+      <value value="&quot;Rothamsted (2009)&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="FeedBees">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="AlwaysDance">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot1">
+      <value value="&quot;aff &amp; lifespan&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DotDensity">
+      <value value="0.01"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ReadInfile">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HarvestingPeriod">
+      <value value="80"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MiteReproductionModel">
+      <value value="&quot;Martin&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HoneyIdeal">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot2">
+      <value value="&quot;colony structure workers&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="CONC_R">
+      <value value="1.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MergeColoniesTH">
+      <value value="5000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="INPUT_FILE">
+      <value value="&quot;Input_2-1_FoodFlow_Exp2011good.txt&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot3">
+      <value value="&quot;loads returning foragers [%]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="PollenIdeal">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ConstantHandlingTime">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="GenericPlot8">
+      <value value="&quot;foragers today [%]&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DETECT_PROB_R">
+      <value value="0.2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="QUANTITY_R_l">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="VarroaTreatment">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="DISTANCE_G">
+      <value value="500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="TIME_POLLEN_GATHERING">
+      <value value="600"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HarvestingTH">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MAX_BROODCELLS">
+      <value value="2000099"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="modelledInsteadCalcDetectProb">
+      <value value="false"/>
+    </enumeratedValueSet>
+  </experiment>
 </experiments>
 @#$#@#$#@
 @#$#@#$#@
@@ -10047,6 +10752,7 @@ true
 0
 Line -7500403 true 150 150 90 180
 Line -7500403 true 150 150 210 180
+
 @#$#@#$#@
 0
 @#$#@#$#@
