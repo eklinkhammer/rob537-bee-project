@@ -2,7 +2,10 @@
   <experiment name="runTests" repetitions="1" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>VersionTestProc</go>
-    <timeLimit steps="1"/>
+    <timeLimit steps="2"/>
+    <metric>day</metric>
+    <metric>allNectarVisits</metric>
+    <metric>allPollenVisits</metric>
     <enumeratedValueSet variable="VERBOSE">
       <value value="false"/>
     </enumeratedValueSet>
@@ -12,6 +15,5 @@
     <enumeratedValueSet variable="INPUT_FILE">
       <value value="&quot;Sources.txt&quot;"/>
     </enumeratedValueSet>
-    
   </experiment>
 </experiments>

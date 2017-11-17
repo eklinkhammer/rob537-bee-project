@@ -203,6 +203,9 @@ globals [
   VERBOSE
   ReadInfile
 
+  allNectarVisits
+  allPollenVisits
+
 ]
 
 turtles-own ; all cohorts below have these variables too
@@ -1124,8 +1127,13 @@ to DailyUpdateProc
     ]
   ]
 
+  set allPollenVisits []
+  set allNectarVisits []
+  ;set allPollenVisits [pollenVisitsToday] of flowerpatches
   ask flowerpatches
   [
+    set allPollenVisits lput pollenVisitsToday allPollenVisits
+    set allNectarVisits lput nectarVisitsToday allNectarVisits
     ifelse ( quantityMyl < CROPVOLUME * SQUADRON_SIZE
              and
              amountPollen_g < POLLENLOAD * SQUADRON_SIZE )
