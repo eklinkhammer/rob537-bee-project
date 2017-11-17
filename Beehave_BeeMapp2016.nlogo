@@ -31,6 +31,8 @@ globals [
   DailyMiteFall
   DailyPollenConsumption_g
   Day
+  DANCE_INTERCEPT
+  DANCE_SLOPE
   DeathsAdultWorkers_t
   DeathsForagingToday
   DecentHoneyEnergyStore
@@ -138,6 +140,8 @@ globals [
   Pupae_W&D_KilledByVirusToday
     ; number of drone + worker pupae that were killed by the virus today
   PUPATION_AGE
+  QUANTITY_G_l
+  QUANTITY_R_l
   Queenage
   RecruitedFlightsToday
   SaveInvadedMODroneLarvaeToPupae
@@ -191,10 +195,13 @@ globals [
 
 
 
-     AllBeeMappCorrectionsList   ;   ***NEW FOR BEEHAVE_BEEMAPP2015***
-     AssessmentNumber            ;   ***NEW FOR BEEHAVE_BEEMAPP2015***
-     WeatherDataList             ;   ***NEW FOR BEEHAVE_BEEMAPP2015***
+  AllBeeMappCorrectionsList   ;   ***NEW FOR BEEHAVE_BEEMAPP2015***
+  AssessmentNumber            ;   ***NEW FOR BEEHAVE_BEEMAPP2015***
+  WeatherDataList             ;   ***NEW FOR BEEHAVE_BEEMAPP2015***
 
+  INPUT_FILE
+  VERBOSE
+  ReadInfile
 
 ]
 
@@ -289,7 +296,7 @@ miteOrganisers-own
 ; *****************************************************************************
 
 to Setup ; BUTTON!
-  clear-all
+  MyClear
   set N_INITIAL_BEES round N_INITIAL_BEES
   set N_INITIAL_MITES_HEALTHY round N_INITIAL_MITES_HEALTHY
   set N_INITIAL_MITES_INFECTED round N_INITIAL_MITES_INFECTED
@@ -310,9 +317,32 @@ to Setup ; BUTTON!
       ;(INSERT INITIAL CONDITIONS FOR EXPERIMENTAL COLONIES HERE)
       GoTreatmentProc
     ]
+end
 
+; Because clear-all clears globals, to have constants that are not overridden you
+;  either have to define them as buttons / GUI input or set default values through
+;  some proc. Alternative - let them into temp variables...
+to MyClear
+  let tempVERBOSE VERBOSE
+  let tempINPUT_FILE INPUT_FILE
+  let tempReadInFile ReadInfile
+  
+  let tempDANCE_SLOPE DANCE_SLOPE
+  let tempDANCE_INTERCEPT DANCE_INTERCEPT
+  let tempQUANTITY_G_l QUANTITY_G_l
+  let tempQUANTITY_R_l QUANTITY_R_l
 
-
+  
+  clear-all
+  
+  set VERBOSE tempVERBOSE
+  set INPUT_FILE tempINPUT_FILE
+  set ReadInfile tempReadInfile
+  
+  set DANCE_SLOPE tempDANCE_SLOPE
+  set DANCE_INTERCEPT tempDANCE_INTERCEPT
+  set QUANTITY_G_l tempQUANTITY_G_l
+  set QUANTITY_R_l tempQUANTITY_R_l
 
 end
 
@@ -1213,7 +1243,9 @@ to DailyUpdateProc
    [
      if ColonyDied = false
      [
-       output-print word "Starvation! Colony died on Day " ticks
+       if VERBOSE [
+	 output-print word "Starvation! Colony died on Day " ticks
+       ]
      ]
      set ColonyDied true
    ]
@@ -1223,23 +1255,28 @@ to DailyUpdateProc
  [
    if ColonyDied = false
    [
-     output-print word "No bees left! Colony died on Day " ticks
+     if VERBOSE [
+       output-print word "No bees left! Colony died on Day " ticks
+     ]
    ]
    set ColonyDied true
  ]
 
  if (Day = 365)
  [
+   if VERBOSE [
    output-type word "31.12.: COLONY SIZE: " (TotalIHbees + TotalForagers)
-   output-type "   HONEY STORE [kg]: "
-   output-print precision (HoneyEnergyStore / (1000 * ENERGY_HONEY_per_g)) 1
+     output-type "   HONEY STORE [kg]: "
+     output-print precision (HoneyEnergyStore / (1000 * ENERGY_HONEY_per_g)) 1
+   ]
  ]
 
  if (Day = 365) and (TotalIHbees + TotalForagers < CRITICAL_COLONY_SIZE_WINTER)
  [
-   if ColonyDied = false
-   [
-     output-print word "Winter mortality! Colony died on Day " ticks
+   if ColonyDied = false [
+     if VERBOSE [
+       output-print word "Winter mortality! Colony died on Day " ticks
+     ]
    ]
    set ColonyDied true
  ]
@@ -1422,7 +1459,9 @@ to SwarmingProc
   if day = SwarmingDate
      and Swarming = "Swarm control"
   [
-    output-type "Swarming (prevented) on day: " output-print day
+    if VERBOSE [
+      output-type "Swarming (prevented) on day: " output-print day
+    ]
   ]
 
   if day >= SwarmingDate - PRE_SWARMING_PERIOD
@@ -1468,7 +1507,9 @@ to SwarmingProc
 
         ; the phoretic mite population in the hive is reduced:
         set PhoreticMites round (PhoreticMites * (1 - fractionSwarm))
-        output-type "Swarming on day: " output-print day
+	if VERBOSE [
+	output-type "Swarming on day: " output-print day
+      ]
         set SwarmingDate 0  ; allows production of after swarms
       ]
     ]
@@ -1524,8 +1565,10 @@ to SwarmingProc
               ((TotalForagers + TotalIHbees)
                 * 36 * ENERGY_HONEY_per_g) / 1000
           ; Winston p. 185: 36mg honey per bee during swarming
-        output-type "Swarming on day: "
-        output-print day
+	if VERBOSE [
+	output-type "Swarming on day: "
+	output-print day
+	]
         set SwarmingDate 0  ; allows production of after swarms
       ] ; if  day = SwarmingDate ..
     ] ; if Swarming = "Swarming (prime swarm)"   ,,
@@ -5238,18 +5281,20 @@ to BeekeepingProc
        ; feeding colony in spring or summer
   [
     set TotalHoneyFed_kg TotalHoneyFed_kg + addedFondant_kg
-    set HoneyEnergyStore HoneyEnergyStore + (addedFondant_kg * ENERGY_HONEY_per_g * 1000)
-    output-type "Feeding colony on day "
-    output-type ceiling (day mod 30.4374999) ; day
-    output-type "."
-    output-type floor(day / (365.25 / 12)) + 1 ; month
-    output-type "."
-    output-type ceiling (ticks / 365)     ; year
-    output-type " Fondant provided [kg]: "
-    output-type precision addedFondant_kg 1
-    output-type " total food added [kg]: "
-    output-print precision TotalHoneyFed_kg 1
-    ask Signs with [shape = "ambrosia"] [ show-turtle]
+	set HoneyEnergyStore HoneyEnergyStore + (addedFondant_kg * ENERGY_HONEY_per_g * 1000)
+	if VERBOSE [
+	output-type "Feeding colony on day "
+	output-type ceiling (day mod 30.4374999) ; day
+	output-type "."
+	output-type floor(day / (365.25 / 12)) + 1 ; month
+	output-type "."
+	output-type ceiling (ticks / 365)     ; year
+	output-type " Fondant provided [kg]: "
+	output-type precision addedFondant_kg 1
+	output-type " total food added [kg]: "
+	output-print precision TotalHoneyFed_kg 1
+	ask Signs with [shape = "ambrosia"] [ show-turtle]
+	]
   ]
 
   if FeedBees = true
@@ -5261,16 +5306,19 @@ to BeekeepingProc
        + minWinterStore_kg
        -(HoneyEnergyStore / ( ENERGY_HONEY_per_g * 1000 ))
 
-    output-type "Feeding colony on day "
-    output-type day
-    output-type ". Ambrosia fed [kg]: "
-    output-type precision (minWinterStore_kg - (HoneyEnergyStore / ( ENERGY_HONEY_per_g * 1000 ))) 1
-    output-type " total food added [kg]: "
-    output-print precision TotalHoneyFed_kg 1
-    set HoneyEnergyStore minWinterStore_kg * 1000 * ENERGY_HONEY_per_g
-       ; if honey store is smaller than minWinterStore it is filled up to minWinterStore
+       if VERBOSE [
+	 output-type "Feeding colony on day "
+	 output-type day
+	 output-type ". Ambrosia fed [kg]: "
+	 output-type precision (minWinterStore_kg - (HoneyEnergyStore / ( ENERGY_HONEY_per_g * 1000 ))) 1
+	 output-type " total food added [kg]: "
+	 output-print precision TotalHoneyFed_kg 1
 
-    ask Signs with [shape = "ambrosia"] [ show-turtle]
+	 ; if honey store is smaller than minWinterStore it is filled up to minWinterStore
+
+	 ask Signs with [shape = "ambrosia"] [ show-turtle]
+       ]
+       set HoneyEnergyStore minWinterStore_kg * 1000 * ENERGY_HONEY_per_g
   ]
 
   ; ADD BEES TO WEAK COLONY - a weak colony is "merged" with another
@@ -5281,13 +5329,14 @@ to BeekeepingProc
     and day = winterPauseStart
   [
     set TotalBeesAdded TotalBeesAdded + MergeColoniesTH
-    output-type "Merging colonies in autumn! "
-    output-type " # added bees: "
-    output-type MergeColoniesTH
-    output-type " total bees added: "
-    output-print TotalBeesAdded
-    ask signs with [shape = "colonies_merged"] [ show-turtle ]
-
+    if VERBOSE [
+      output-type "Merging colonies in autumn! "
+      output-type " # added bees: "
+      output-type MergeColoniesTH
+      output-type " total bees added: "
+      output-print TotalBeesAdded
+      ask signs with [shape = "colonies_merged"] [ show-turtle ]
+    ]
     create-foragerSquadrons (MergeColoniesTH / SQUADRON_SIZE)
     [
       set age 60 + random 40
@@ -5315,10 +5364,12 @@ to BeekeepingProc
   [
     ask signs with [shape = "pollengrain"] [ show-turtle ]
     set TotalPollenAdded TotalPollenAdded + addedPollen_kg
-    output-type "Added pollen [kg]: "
-    output-type addedPollen_kg
-    output-type " total pollen added [kg]: "
-    output-print TotalPollenAdded
+	;if VERBOSE [
+	output-type "Added pollen [kg]: "
+	output-type addedPollen_kg
+	output-type " total pollen added [kg]: "
+	output-print TotalPollenAdded
+     ; ]
     set PollenStore_g PollenStore_g + addedPollen_kg * 1000
   ]
 
@@ -5333,8 +5384,9 @@ to BeekeepingProc
       set HarvestedHoney_kg (HoneyEnergyStore  / (ENERGY_HONEY_per_g * 1000)) - RemainingHoney_kg
       set HoneyEnergyStore HoneyEnergyStore - (HarvestedHoney_kg * ENERGY_HONEY_per_g * 1000)
       set TotalHoneyHarvested_kg TotalHoneyHarvested_kg + HarvestedHoney_kg
-      output-type "Honey harvest on day "
-      output-type ceiling (day mod 30.4374999)
+	  if VERBOSE [
+	  output-type "Honey harvest on day "
+	  output-type ceiling (day mod 30.4374999)
       output-type "."
       output-type floor(day / (365.25 / 12)) + 1
       output-type "."
@@ -5342,7 +5394,8 @@ to BeekeepingProc
       output-type ". Amount [kg]: "
       output-type precision HarvestedHoney_kg 1
       output-type " total honey harvested: "
-      output-print precision TotalHoneyHarvested_kg 1
+	output-print precision TotalHoneyHarvested_kg 1
+      ]
       ask Signs with [shape = "honeyjar"]
       [
         show-turtle
@@ -6388,7 +6441,7 @@ end
 
 to DefaultProc
 ; new variables:
-set AllowReinfestation FALSE
+  set AllowReinfestation FALSE
 ;set BeeMapp_FILE "ColonyAssessment.txt"
 set ContinuousBroodRemoval FALSE
 set DroneBroodRemoval FALSE
@@ -6473,7 +6526,7 @@ set QUANTITY_G_l 20
 set QUANTITY_R_l 20
 set QueenAgeing  FALSE
 ; RAND_SEED: no default setting
-set ReadInfile false
+; set ReadInfile false
 set RemainingHoney_kg  5
 set SeasonalFoodFlow TRUE
 set SHIFT_G -40
@@ -6491,6 +6544,82 @@ set WriteFile  FALSE
 ;set X_Days  7
 
 
+end
+to UnitTest [name actual expected]
+  ifelse actual = expected
+  [
+    output-print "Unit test successful."
+  ]
+  [
+    output-type "Expected "
+    output-type expected
+    output-type " for value of "
+    output-type name
+    output-type ", but received "
+    output-type actual
+    output-print "."
+  ]
+end
+
+to VersionTestProc
+  set Rand_seed 1
+
+  DefaultProc
+
+  set stopDead false
+
+  ; "Varroa"
+  set N_INITIAL_MITES_HEALTHY 10
+  set N_INITIAL_MITES_INFECTED 10
+  set Virus "DWV"
+  set MiteReproductionModel "Martin"
+  set GenericPlot4 "mites"
+  set AllowReinfestation true
+  set KillOpenBrood true
+  set KillOpenBrood2 true
+  set KillAllMitesInCells true
+  set KillAllMitesInCells2 true
+  set DroneBroodRemoval true
+  set ContinuousBroodRemoval true
+  set TreatmentDay2 180
+  set TreatmentDuration2 20
+  set EfficiencyPhoretic2 0.05
+
+  ; "Beekeeping"
+  set VarroaTreatment TRUE
+  set FeedBees TRUE
+  set HoneyHarvesting TRUE
+  set MergeWeakColonies TRUE
+  set MergeColoniesTH 5000
+  set HarvestingDay 135
+  set HarvestingPeriod 80
+  set RemainingHoney_kg 5
+  set HarvestingTH 20
+  ask signs with [shape = "jenny"] [show-turtle]
+
+  ; SWARMING
+  set Swarming "Swarming (prime swarm)"
+
+  Setup
+  repeat 365 [ startProc ]
+  set VarroaTreatment false
+  set Swarming "Swarming (parental colony)"
+  set ContinuousBroodRemoval false
+  set KillOpenBrood false
+  set KillOpenBrood2 false
+  set KillAllMitesInCells false
+  set KillAllMitesInCells2 false
+
+  repeat 1825 [ startProc ]
+
+  UnitTest "totalForagers" totalForagers 5300
+  UnitTest "totalIHbees" totalIHbees 41
+  UnitTest "totalMites" totalMites 7101
+  ifelse
+  (precision (HoneyEnergyStore / ( ENERGY_HONEY_per_g * 1000 )) 6 = 16.297696)
+    [ output-print "OK! No deviations detected from the Beehave_BeeMapp2016 version!" ]
+    [ ask patches [ set pcolor pink ]
+      output-print "Caution! Changes have been made to the code! THIS IS NOT THE OFFICIAL VERSION OF Beehave_BeeMapp2015!"]
 end
 
 ; ********************************************************************************************************************************************************************************
@@ -6619,28 +6748,6 @@ NIL
 NIL
 NIL
 1
-
-INPUTBOX
-998
-139
-1098
-199
-QUANTITY_R_l
-20.0
-1
-0
-Number
-
-INPUTBOX
-1098
-139
-1201
-199
-QUANTITY_G_l
-20.0
-1
-0
-Number
 
 INPUTBOX
 998
@@ -6825,17 +6932,6 @@ RAND_SEED
 1
 0
 Number
-
-SWITCH
-1753
-442
-1980
-475
-ReadInfile
-ReadInfile
-1
-1
--1000
 
 TEXTBOX
 1036
@@ -7386,7 +7482,7 @@ BUTTON
 321
 43
 1 feeder
-set ReadInfile false\nset QUANTITY_R_l 20\nset QUANTITY_G_l 0\nset CONC_R 1.5\nset POLLEN_R_kg 2\nset POLLEN_G_kg 0\nset DISTANCE_R 1500\nset ConstantHandlingTime true\nset seasonalFoodFlow false\nset TIME_NECTAR_GATHERING 79  ;  Seeley\nset TIME_POLLEN_GATHERING 120 ; arbitrary\nset DETECT_PROB_R 0.01  ; 0.15   ; arbitrary\nSetup
+set ReadInfile false\nset QUANTITY_R_l 20\nset QUANTITY_l 0\nset CONC_R 1.5\nset POLLEN_R_kg 2\nset POLLEN_G_kg 0\nset DISTANCE_R 1500\nset ConstantHandlingTime true\nset seasonalFoodFlow false\nset TIME_NECTAR_GATHERING 79  ;  Seeley\nset TIME_POLLEN_GATHERING 120 ; arbitrary\nset DETECT_PROB_R 0.01  ; 0.15   ; arbitrary\nSetup
 NIL
 1
 T
@@ -7659,28 +7755,6 @@ TIME_POLLEN_GATHERING
 0
 Number
 
-INPUTBOX
-279
-1417
-434
-1477
-DANCE_INTERCEPT
-0.0
-1
-0
-Number
-
-INPUTBOX
-279
-1348
-434
-1408
-DANCE_SLOPE
-1.16
-1
-0
-Number
-
 BUTTON
 223
 1444
@@ -7768,7 +7842,7 @@ BUTTON
 882
 1369
 Version Test
-set Rand_seed 1\n\nDefaultProc\n\nset stopDead false\n\n; \"Varroa\"\nset N_INITIAL_MITES_HEALTHY 10\nset N_INITIAL_MITES_INFECTED 10\nset Virus \"DWV\"\nset MiteReproductionModel \"Martin\"\nset GenericPlot4 \"mites\"\nset AllowReinfestation true\nset KillOpenBrood true\nset KillOpenBrood2 true\nset KillAllMitesInCells true\nset KillAllMitesInCells2 true\nset DroneBroodRemoval true\nset ContinuousBroodRemoval true\nset TreatmentDay2 180\nset TreatmentDuration2 20\nset EfficiencyPhoretic2 0.05\n\n; \"Beekeeping\"\nset VarroaTreatment TRUE\nset FeedBees TRUE\nset HoneyHarvesting TRUE\nset MergeWeakColonies TRUE\nset MergeColoniesTH 5000\nset HarvestingDay 135\nset HarvestingPeriod 80\nset RemainingHoney_kg 5\nset HarvestingTH 20\nask signs with [shape = \"jenny\"] [show-turtle]\n\n; SWARMING\nset Swarming \"Swarming (prime swarm)\"\n\nSetup\nrepeat 365 [ startProc ]\nset VarroaTreatment false\nset Swarming \"Swarming (parental colony)\"\nset ContinuousBroodRemoval false\nset KillOpenBrood false\nset KillOpenBrood2 false\nset KillAllMitesInCells false\nset KillAllMitesInCells2 false\n\nrepeat 1825 [ startProc ]\n\nifelse\n(totalForagers = 5300)\nand ( totalIHbees = 41)\nand (totalMites = 7101)\nand (precision (HoneyEnergyStore / ( ENERGY_HONEY_per_g * 1000 )) 6 = 16.297696)\n[ user-message \"OK! No deviations detected from the Beehave_BeeMapp2016 version!\" ]\n[ ask patches [ set pcolor pink ]\n  user-message \"Caution! Changes have been made to the code! THIS IS NOT THE OFFICIAL VERSION OF Beehave_BeeMapp2015!\"]
+VersionTestProc
 NIL
 1
 T
@@ -7925,7 +7999,7 @@ CHOOSER
 GenericPlot4
 GenericPlot4
 "colony structure workers" "drones" "egg laying" "broodcare [%]" "age forager squadrons" "aff & lifespan" "mileometer" "honey & pollen stores [kg]" "colony weight [kg]" "consumption [g/day]" "honey gain [kg]" "mites" "proportion infected mites" "active foragers [%]" "active foragers today [%]" "foragingPeriod" "foraging probability" "foragers today [%]" "loads returning foragers [%]" "mean trip duration" "mean total km per day" "# completed foraging trips (E-3)" "trips per hour sunshine (E-3)" "nectar availability [l]" "pollen availability [kg]"
-11
+7
 
 TEXTBOX
 9
@@ -8033,7 +8107,7 @@ CHOOSER
 GenericPlot7
 GenericPlot7
 "colony structure workers" "drones" "egg laying" "broodcare [%]" "age forager squadrons" "aff & lifespan" "mileometer" "honey & pollen stores [kg]" "colony weight [kg]" "consumption [g/day]" "honey gain [kg]" "mites" "proportion infected mites" "active foragers [%]" "active foragers today [%]" "foragingPeriod" "foraging probability" "foragers today [%]" "loads returning foragers [%]" "mean trip duration" "mean total km per day" "# completed foraging trips (E-3)" "trips per hour sunshine (E-3)" "nectar availability [l]" "pollen availability [kg]"
-19
+16
 
 CHOOSER
 1234
@@ -8736,16 +8810,6 @@ Calculator: # cells
 14
 0.0
 1
-
-CHOOSER
-1753
-475
-1980
-520
-INPUT_FILE
-INPUT_FILE
-"Input_2-1_FoodFlow.txt" "Input_2-1_FoodFlow_RRes.txt" "Sources.txt"
-0
 
 CHOOSER
 1755
@@ -9791,6 +9855,11 @@ NetLogo 6.0.2
 @#$#@#$#@
 @#$#@#$#@
 <experiments>
+  <experiment name="unittest" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>VersionTestProc</go>
+    <timeLimit steps="1"/>
+  </experiment>
   <experiment name="Experiment 1" repetitions="1" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
@@ -10032,6 +10101,14 @@ NetLogo 6.0.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="X_Days">
       <value value="180"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="experiment" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles</metric>
+    <enumeratedValueSet variable="DANCE_SLOPE">
+      <value value="&quot;1&quot;"/>
     </enumeratedValueSet>
   </experiment>
 </experiments>

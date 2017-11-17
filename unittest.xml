@@ -1,0 +1,17 @@
+<experiments>
+  <experiment name="runTests" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>VersionTestProc</go>
+    <timeLimit steps="1"/>
+    <enumeratedValueSet variable="VERBOSE">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ReadInfile">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="INPUT_FILE">
+      <value value="&quot;Sources.txt&quot;"/>
+    </enumeratedValueSet>
+    
+  </experiment>
+</experiments>
